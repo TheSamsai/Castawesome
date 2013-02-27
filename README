@@ -1,0 +1,68 @@
+				Castawesome, Lifeless Planet Software
+	
+			
+Short introduction:
+	Castawesome is GUI wrapper around a script, that is used to stream
+	video from Linux desktop to Twitch.tv streaming site. It can be
+	used, for example, in live screencasts or live gaming screencasts.
+	
+	The script (and thus also Castawesome) is built around tool called
+	"avconv", which is one of the tools Libav developers provide.
+	Both Libav and Castawesome are free/libre open source software
+	licensed under GPL or LGPL.
+	
+Background story:
+	I have been Linux user for few years now and I have grown to like
+	it a lot. But during these years I have noticed that few things
+	have been missing that I would want to have, mainly games and
+	game-related software.
+	
+	One thing I was really missing, was a program that could stream
+	live video from my screen, so that others could watch me play,
+	code or whatever I was doing at the moment.
+	
+	The revelation became, when I found a script that could grab video
+	from my x11 session and then send that to the famous Twitch.tv or
+	Justin.tv websites. I was thrilled of the possibilities this little 
+	script could provide.
+	
+	I would have been happy using only that piece of Bash, but then
+	I started to think what the legendary "Average Joe" would think
+	about modifying some strange .sh file and decided to write a GUI
+	wrapper around it. That wrapper became Castawesome.
+	
+Installation and usage:
+	I have tried to make installing and using Castawesome as easy as
+	possible, but due to my lack of knowledge in application programming
+	there are few "hacks" that need to be done before the program may
+	be used. The steps necessary to get Castawesome working are here:
+	
+	1. 	Download the tar.gz package of Castawesome and extract it into
+		a folder on your system.
+	2.	Verify that you have installed Python 2, GTK-3 libraries and
+		libav-tools. (Dependencies are listed in DEPENDS file)
+	3.	Run "make" in the folder you extracted Castawesome files into,
+		to verify you have all necessary GTK libraries installed.
+		If test is succesful, you will see "Castawesome is ok" in the
+		terminal.
+	4.	You can now install Castawesome system-wide with a command
+		similar to "sudo make install" or leave it to the current
+		folder.
+	5.	Run Castawesome by either double-clicking the "castawesome.py"
+		file or by running "castawesome" in terminal to create config
+		files for your user.
+	6.	Retrieve your stream key from http://www.justin.tv/broadcast/adv_other
+		and input it when Castawesome asks for it.
+		The stream key will be used to authenticate your stream to the
+		Twitch.tv/Justin.tv servers. (We do not steal your stream key!)
+	7.	Run Castawesome again and modify the settings to fit your
+		needs and then click the Apply-button. You can now close the
+		Settings manager.
+	8.	Click the toggle button to start the stream.
+	
+	Now you have installed and configured Castawesome. For future casts
+	you only need to do steps 7 and 8.
+	
+Bug reports, comments, patches?
+	For any and all feedback, send message to 
+	lifelessplanetsoftware@gmail.com
