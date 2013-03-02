@@ -55,13 +55,40 @@ Installation and usage:
 		and input it when Castawesome asks for it.
 		The stream key will be used to authenticate your stream to the
 		Twitch.tv/Justin.tv servers. (We do not steal your stream key!)
-	7.	Run Castawesome again and modify the settings to fit your
-		needs and then click the Apply-button. You can now close the
-		Settings manager.
+	7.	You should modify your streaming settings now, because the default
+		values might not work for you.
+		
+		More detailed descriptions of the settings are here:
+		
+		Input Resolution: 
+			Resolution of the screen or area of screen you want to stream.
+		Output Resolution:
+			Resolution of the stream your viewers will see.
+			Higher output resolution allows your viewers to see more
+			details and increases the overall quality of the stream, but
+			consumes more processing power and network bandwidth.
+		Frames Per Second:
+			How many frames you want to send per second.
+			Keep in mind that higher frame rates will consume more
+			processing power and network bandwidth.
+		Quality:
+			Generic setting for the stream quality. You can usually
+			leave it "medium" or "fast".
+		Bitrate:
+			More specific setting for the stream quality. Higher
+			bitrate makes the stream in less blurry, but also consumes
+			more bandwidth.
+		Threads:
+			This is the number of threads you will use to encode the
+			video. Using more threads encodes the video faster, but
+			uses more processing power. This setting should not be
+			higher than the amount of cores your CPU has.
+		
 	8.	Click the toggle button to start the stream.
 	
-	Now you have installed and configured Castawesome. For future casts
-	you only need to do steps 7 and 8.
+	Now you have installed and configured Castawesome. Your settings
+	will be saved, so that next time you only need to toggle the stream
+	on.
 	
 Bug reports, comments, patches?
 	For any and all feedback, send message to 

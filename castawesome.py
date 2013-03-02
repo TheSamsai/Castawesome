@@ -1,6 +1,6 @@
 #!/usr/bin/python2
 #
-# castawesome.py (ver 0.1)
+# castawesome.py (ver 0.12)
 # Copyright (C) 2012 Sami Lahtinen <lifelessplanetsoftware@gmail.com>
 # 
 # Castawesome is free software: you can redistribute it and/or modify it
@@ -77,7 +77,10 @@ class GUI:
 		self.about = About()
 	def stream(self):
 		# Avconv is supplied with user's settings and executed
-		command = str('avconv -f x11grab -s ' + self.settings.get_inres() + ' -r "' + self.settings.get_fps() + '" -i :0.0 -f alsa -ac 2 -i pulse -vcodec libx264 -s ' + self.settings.get_outres() + ' -preset ' + self.settings.get_quality() + ' -acodec libmp3lame -ar 44100 -threads ' + self.settings.get_threads() + ' -qscale 3 -b ' + self.settings.get_bitrate() + ' -bufsize 512k -f flv "rtmp://live.justin.tv/app/$(cat ~/.castawesome/.twitch_key)" &')
+		command = str('avconv -f x11grab -s ' + self.settings.get_inres() + ' -r "' + self.settings.get_fps() + '" -i :0.0+' + self.settings.get_x_offset() + ',' + self.settings.get_y_offset() +' -f alsa -ac 2 -i pulse -vcodec libx264 -s ' + self.settings.get_outres() + ' -preset ' + self.settings.get_quality() + ' -acodec libmp3lame -ar 44100 -threads ' + self.settings.get_threads() + ' -qscale 3 -b ' + self.settings.get_bitrate() + ' -bufsize 512k -f flv "rtmp://live.justin.tv/app/$(cat ~/.config/castawesome/.twitch_key)" &')
+		print "-------------------"
+		print command
+		print "-------------------"
 		os.system(command)
 		
 	def update_timer(self):
@@ -102,6 +105,8 @@ class GUI:
 class Settings:
 	inres = ""				# Input resolution
 	outres = ""				# Output resolution
+	x_offset = ""			# X offset
+	y_offset = ""			# Y offset
 	fps = ""				# Frames per Second
 	quality = ""			# Quality (medium, fast, etc.)
 	bitrate = ""			# Bitrate (+300k usually is fine)
@@ -110,47 +115,60 @@ class Settings:
 	def __init__(self):
 		if not os.system("mkdir ~/.config/castawesome"):
 			# Configuration files are missing, create them and add default settings
-			os.system("echo '' > ~/.config/castawesome/.twitch_key")
+			os.system("touch ~/.config/castawesome/.twitch_key")
 			
 			# Default settings for the user
 			fob = open(home + "/.config/castawesome/config.txt", "w")
 			fob.write("1280x720\n")
 			fob.write("1280x720\n")
+			fob.write("0\n")
+			fob.write("0\n")
 			fob.write("25\n")
 			fob.write("medium\n")
 			fob.write("400k\n")
 			fob.write("1\n")
 			fob.close()
 			
-			# If stream key is missing, warn the user
-			warning = StreamKey()
-
 		else:
 			print "Config files exist..."
-			try:
-				fob = open(home + "/.config/castawesome/config.txt", "r")
-				lines = fob.readlines()
-				fob.close()
+		try:
+			fob = open(home + "/.config/castawesome/.twitch_key", "r")
+			key = fob.read()
+			fob.close()
 			
-				self.inres = lines[0].lstrip().rstrip()
-				self.outres = lines[1].lstrip().rstrip()
-				self.fps = lines[2].lstrip().rstrip()
-				self.quality = lines[3].lstrip().rstrip()
-				self.bitrate = lines[4].lstrip().rstrip()
-				self.threads = lines[5].lstrip().rstrip()
-			except:
-				print "Couldn't load config files!"
+			print key
+			if key == "":
+				warning = StreamKey()
+			
+			fob = open(home + "/.config/castawesome/config.txt", "r")
+			lines = fob.readlines()
+			fob.close()
+			
+			self.inres = lines[0].lstrip().rstrip()
+			self.outres = lines[1].lstrip().rstrip()
+			self.x_offset = lines[2].lstrip().rstrip()
+			self.y_offset = lines[3].lstrip().rstrip()
+			self.fps = lines[4].lstrip().rstrip()
+			self.quality = lines[5].lstrip().rstrip()
+			self.bitrate = lines[6].lstrip().rstrip()
+			self.threads = lines[7].lstrip().rstrip()
+		except:
+			print "Couldn't load config files!"
 			
 		self.builder = Gtk.Builder()
 		try:
-			self.builder.add_from_file(SETUP_FILE1)
+			self.builder.add_from_file(SETUP_UI_FILE1)
+			print "Loaded " + SETUP_UI_FILE1
 		except:
 			self.builder.add_from_file(SETUP_UI_FILE2)
+			print "Loaded " + SETUP_UI_FILE2
 		self.builder.connect_signals(self)
 
 		window = self.builder.get_object("settings")
 		self.builder.get_object("entry_inres").set_text(self.inres)
 		self.builder.get_object("entry_outres").set_text(self.outres)
+		self.builder.get_object("entry_xoffset").set_text(self.x_offset)
+		self.builder.get_object("entry_yoffset").set_text(self.y_offset)
 		self.builder.get_object("entry_fps").set_text(self.fps)
 		self.builder.get_object("entry_quality").set_text(self.quality)
 		self.builder.get_object("entry_bitrate").set_text(self.bitrate)
@@ -166,6 +184,12 @@ class Settings:
 
 	def get_outres(self):
 		return self.outres
+		
+	def get_x_offset(self):
+		return self.x_offset
+		
+	def get_y_offset(self):
+		return self.y_offset
 
 	def get_fps(self):
 		return self.fps
@@ -182,6 +206,8 @@ class Settings:
 	def on_button_apply_clicked(self, window):
 		self.inres = self.builder.get_object("entry_inres").get_text()
 		self.outres = self.builder.get_object("entry_outres").get_text()
+		self.x_offset = self.builder.get_object("entry_xoffset").get_text()
+		self.y_offset = self.builder.get_object("entry_yoffset").get_text()
 		self.fps = self.builder.get_object("entry_fps").get_text()
 		self.quality = self.builder.get_object("entry_quality").get_text()
 		self.bitrate = self.builder.get_object("entry_bitrate").get_text()
@@ -192,6 +218,8 @@ class Settings:
 
 		fob.write(self.inres + "\n")
 		fob.write(self.outres + "\n")
+		fob.write(self.x_offset + "\n")
+		fob.write(self.y_offset + "\n")
 		fob.write(self.fps + "\n")
 		fob.write(self.quality + "\n")
 		fob.write(self.bitrate + "\n")
@@ -205,14 +233,19 @@ class StreamKey():
 		self.builder = Gtk.Builder()
 		try:
 			self.builder.add_from_file(STREAMKEY_UI_FILE1)
+			print "Loaded " + STREAMKEY_UI_FILE1
 		except:
 			self.builder.add_from_file(STREAMKEY_UI_FILE2)
+			print "Loaded " + STREAMKEY_UI_FILE2
 		window = self.builder.get_object("warning")
+		self.builder.connect_signals(self)
 		window.show_all()
 	
-	def on_button_ok_clicked(self):
+	def on_button_ok_clicked(self, window):
+		print "Clicked!"
 		fob = open(home + "/.config/castawesome/.twitch_key", "w")
 		fob.write(self.builder.get_object("entry_streamkey").get_text())
+		print self.builder.get_object("entry_streamkey").get_text()
 		fob.close()
 
 # About window

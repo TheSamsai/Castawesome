@@ -1,3 +1,4 @@
+version=0.1
 
 all:
 	./castawesome.py test
@@ -9,9 +10,13 @@ install:
 	cp README AUTHORS NEWS COPYING /usr/local/share/castawesome/doc
 	cp castawesome.py /usr/local/bin/castawesome
 
+uninstall:
+	rm -rf /usr/local/share/castawesome
+	rm -f /usr/local/bin/castawesome
+
 package:
-	rm -f castawesome.tar.gz
-	tar czf castawesome.tar.gz *
+	rm -f castawesome*.tar.gz
+	tar czf castawesome-$(version).tar.gz *
 
 clean:
-	rm -f castawesome.tar.gz
+	rm -f castawesome*.tar.gz

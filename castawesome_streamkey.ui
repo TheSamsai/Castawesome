@@ -6,6 +6,7 @@
     <property name="title" translatable="yes">Stream key is not set!</property>
     <property name="resizable">False</property>
     <property name="destroy_with_parent">True</property>
+    <property name="urgency_hint">True</property>
     <property name="has_resize_grip">False</property>
     <child>
       <object class="GtkBox" id="box1">
