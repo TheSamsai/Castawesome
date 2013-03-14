@@ -18,9 +18,10 @@
 
 from gi.repository import Gtk, GdkPixbuf, Gdk
 import gobject
-import os, sys
+import os, sys, signal
 import time
 import thread
+import subprocess, shlex
 
 
 # UI files, two for each window
@@ -65,7 +66,8 @@ class GUI:
 	def on_toggle_streaming_toggled(self, window):
 		# Are we streaming, or not?
 		if self.streaming:
-			os.system("killall avconv")
+			# Kill the subprocess and end the stream
+			self.process.kill()
 		else:
 			self.stream()
 		self.streaming = not self.streaming
@@ -76,12 +78,15 @@ class GUI:
 	def on_button_about_clicked(self, window):
 		self.about = About()
 	def stream(self):
+		# Twitch key needs to be read to stream video
+		fob = open(home + "/.config/castawesome/.twitch_key", "r")
+		twitch_key = fob.read().rstrip()
+		fob.close()
+		
 		# Avconv is supplied with user's settings and executed
-		command = str('avconv -f x11grab -s ' + self.settings.get_inres() + ' -r "' + self.settings.get_fps() + '" -i :0.0+' + self.settings.get_x_offset() + ',' + self.settings.get_y_offset() +' -f alsa -ac 2 -i pulse -vcodec libx264 -s ' + self.settings.get_outres() + ' -preset ' + self.settings.get_quality() + ' -acodec libmp3lame -ar 44100 -threads ' + self.settings.get_threads() + ' -qscale 3 -b ' + self.settings.get_bitrate() + ' -bufsize 512k -f flv "rtmp://live.justin.tv/app/$(cat ~/.config/castawesome/.twitch_key)" &')
-		print "-------------------"
-		print command
-		print "-------------------"
-		os.system(command)
+		command = str('avconv -f x11grab -s ' + self.settings.get_inres() + ' -r "' + self.settings.get_fps() + '" -i :0.0+' + self.settings.get_x_offset() + ',' + self.settings.get_y_offset() +' -f alsa -ac 2 -i pulse -vcodec libx264 -s ' + self.settings.get_outres() + ' -preset ' + self.settings.get_quality() + ' -acodec libmp3lame -ar 44100 -threads ' + self.settings.get_threads() + ' -qscale 3 -b ' + self.settings.get_bitrate() + ' -bufsize 512k -f flv "rtmp://live.justin.tv/app/' + twitch_key + '"')
+		# Start a subprocess to handle avconv
+		self.process = subprocess.Popen(shlex.split(command))
 		
 	def update_timer(self):
 		# Just minute/second counter, nothing fancy here

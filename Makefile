@@ -1,4 +1,4 @@
-version=0.1
+version=0.12
 
 all:
 	./castawesome.py test
