@@ -242,16 +242,16 @@ class StreamKey():
 		except:
 			self.builder.add_from_file(STREAMKEY_UI_FILE2)
 			print "Loaded " + STREAMKEY_UI_FILE2
-		window = self.builder.get_object("warning")
+		self.window = self.builder.get_object("warning")
 		self.builder.connect_signals(self)
-		window.show_all()
+		self.window.show_all()
 	
 	def on_button_ok_clicked(self, window):
-		print "Clicked!"
 		fob = open(home + "/.config/castawesome/.twitch_key", "w")
 		fob.write(self.builder.get_object("entry_streamkey").get_text())
-		print self.builder.get_object("entry_streamkey").get_text()
 		fob.close()
+		
+		self.window.destroy()
 
 # About window
 class About():
@@ -275,4 +275,4 @@ def main():
 	return 0
 		
 if __name__ == "__main__":
-    sys.exit(main())
+	sys.exit(main())

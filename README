@@ -9,7 +9,7 @@ Short introduction:
 	The script (and thus also Castawesome) is built around tool called
 	"avconv", which is one of the tools Libav developers provide.
 	Both Libav and Castawesome are free/libre open source software
-	licensed under GPL or LGPL.
+	licensed under GPL and LGPL.
 	
 Background story:
 	I have been Linux user for few years now and I have grown to like
