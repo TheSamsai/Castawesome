@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Castawesome
+Comment=Livestreaming Application
+Exec=castawesome
+# Icon=/usr/share/pixmaps/libreoffice.png
+Terminal=false
+Type=Application
+StartupNotify=true
+Keywords=castawesome;livestream;twitch;
+Categories=Gnome;Internet;
+

@@ -84,7 +84,7 @@ class GUI:
 		fob.close()
 		
 		# Avconv is supplied with user's settings and executed
-		command = str('avconv -f x11grab -s ' + self.settings.get_inres() + ' -r "' + self.settings.get_fps() + '" -i :0.0+' + self.settings.get_x_offset() + ',' + self.settings.get_y_offset() +' -f alsa -ac 2 -i pulse -vcodec libx264 -s ' + self.settings.get_outres() + ' -preset ' + self.settings.get_quality() + ' -acodec libmp3lame -ar 44100 -threads ' + self.settings.get_threads() + ' -qscale 3 -b ' + self.settings.get_bitrate() + ' -bufsize 512k -f flv "rtmp://live.justin.tv/app/' + twitch_key + '"')
+		command = str('avconv -f x11grab' + ' -show_region ' + self.settings.get_show_region() + ' -s ' + self.settings.get_inres() + ' -r "' + self.settings.get_fps() + '" -i :0.0+' + self.settings.get_x_offset() + ',' + self.settings.get_y_offset() + ' -f alsa -ac 2 -i pulse -vcodec libx264 -s ' + self.settings.get_outres() + ' -preset ' + self.settings.get_quality() + ' -acodec libmp3lame -ar 44100 -threads ' + self.settings.get_threads() + ' -qscale 3 -b ' + self.settings.get_bitrate() + ' -bufsize 512k -f flv "rtmp://live.justin.tv/app/' + twitch_key + '"')
 		# Start a subprocess to handle avconv
 		self.process = subprocess.Popen(shlex.split(command))
 		
@@ -132,6 +132,7 @@ class Settings:
 			fob.write("medium\n")
 			fob.write("400k\n")
 			fob.write("1\n")
+			fob.write("1")
 			fob.close()
 			
 		else:
@@ -141,7 +142,6 @@ class Settings:
 			key = fob.read()
 			fob.close()
 			
-			print key
 			if key == "":
 				warning = StreamKey()
 			
@@ -157,6 +157,7 @@ class Settings:
 			self.quality = lines[5].lstrip().rstrip()
 			self.bitrate = lines[6].lstrip().rstrip()
 			self.threads = lines[7].lstrip().rstrip()
+			self.show_region = lines[8].lstrip().rstrip()
 		except:
 			print "Couldn't load config files!"
 			
@@ -178,6 +179,7 @@ class Settings:
 		self.builder.get_object("entry_quality").set_text(self.quality)
 		self.builder.get_object("entry_bitrate").set_text(self.bitrate)
 		self.builder.get_object("entry_threads").set_text(self.threads)
+		self.builder.get_object("entry_region").set_text(self.show_region)
 		
 		# Apply previous configs
 		self.on_button_apply_clicked(0)
@@ -207,6 +209,9 @@ class Settings:
 
 	def get_threads(self):
 		return self.threads
+
+	def get_show_region(self):
+		return self.show_region
 		
 	def on_button_apply_clicked(self, window):
 		self.inres = self.builder.get_object("entry_inres").get_text()
@@ -217,6 +222,7 @@ class Settings:
 		self.quality = self.builder.get_object("entry_quality").get_text()
 		self.bitrate = self.builder.get_object("entry_bitrate").get_text()
 		self.threads = self.builder.get_object("entry_threads").get_text()
+		self.show_region = self.builder.get_object("entry_region").get_text()
 
 		# Save configs in homefolder
 		fob = open(home + "/.config/castawesome/config.txt", "w")
@@ -229,7 +235,8 @@ class Settings:
 		fob.write(self.quality + "\n")
 		fob.write(self.bitrate + "\n")
 		fob.write(self.threads + "\n")
-
+		fob.write(self.show_region + "\n")
+		
 		fob.close()
 
 # Stream key warning dialog
