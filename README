@@ -83,6 +83,11 @@ Installation and usage:
 			video. Using more threads encodes the video faster, but
 			uses more processing power. This setting should not be
 			higher than the amount of cores your CPU has.
+		Show Capture Region:
+			If this setting is on, it will draw a rectangle around the
+			area you are currently capturing. This helps to position and
+			resize windows to fit the stream. The setting can be either
+			1 (on) or 0 (off).
 		
 	8.	Click the toggle button to start the stream.
 	
