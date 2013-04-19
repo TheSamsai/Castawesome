@@ -34,8 +34,7 @@
               <object class="GtkLabel" id="label2">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes"> Warning! Twitch stream key not set!
- Enter your stream key here:</property>
+                <property name="label" translatable="yes">Enter your stream key here:</property>
               </object>
               <packing>
                 <property name="expand">False</property>

@@ -52,9 +52,10 @@ Installation and usage:
 		file or by running "castawesome" in terminal to create config
 		files for your user.
 	6.	Retrieve your stream key from http://www.justin.tv/broadcast/adv_other
-		and input it when Castawesome asks for it.
-		The stream key will be used to authenticate your stream to the
-		Twitch.tv/Justin.tv servers. (We do not steal your stream key!)
+		or http://www.twitch.tv/broadcast and input it when Castawesome 
+		asks for it. The stream key will be used to authenticate your 
+		stream to the Twitch.tv/Justin.tv servers. 
+		(We do not steal your stream key!)
 	7.	You should modify your streaming settings now, because the default
 		values might not work for you.
 		

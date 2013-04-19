@@ -238,6 +238,9 @@ class Settings:
 		fob.write(self.show_region + "\n")
 		
 		fob.close()
+		
+	def on_button_reset_streamkey_clicked(self, window):
+		warning = StreamKey()
 
 # Stream key warning dialog
 class StreamKey():
