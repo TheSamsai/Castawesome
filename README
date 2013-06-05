@@ -75,6 +75,14 @@ Installation and usage:
 		Quality:
 			Generic setting for the stream quality. You can usually
 			leave it "medium" or "fast".
+		Number of Audio Channels:
+			This setting allows you to use more than one audio channel
+			for input. In the default settings this is set to 1, meaning
+			that you can record one audio input only (usually microphone)
+			but you can increase the amount of audio channels to get
+			access to all inputs you need. In normal usage this should
+			be set to 2, so you can record both your microphone and your
+			system sounds (music, games, overall audio).
 		Bitrate:
 			More specific setting for the stream quality. Higher
 			bitrate makes the stream in less blurry, but also consumes

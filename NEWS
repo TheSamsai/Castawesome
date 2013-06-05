@@ -1,1 +1,14 @@
+	#05.06.2013#
+We finally have multiple input audio!
 
+When I was wondering about another problem regarding webcam usage in
+live streams, I stumbled upon a forum post explaining how to use multiple
+audio inputs with avconv. The solution was so simple, that I'm not sure
+how I failed doing that.
+
+I am not sure how well this thing works and if only one channel is
+necessary for your stream, I suggest using only one channel, because
+using multiple channels is not tested and the sound might get out of sync
+but to what extend I have tested it, it seems to be working just fine.
+
+Sami

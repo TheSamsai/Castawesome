@@ -1,4 +1,4 @@
-version=0.12.8
+version=0.13
 
 all:
 	./castawesome.py test
@@ -11,6 +11,7 @@ install:
 	cp castawesome.py /usr/local/bin/castawesome
 	cp uninstall_castawesome.sh /usr/local/bin/uninstall_castawesome
 	cp Castawesome.desktop /usr/local/share/applications
+	chmod +x /usr/local/bin/castawesome /usr/local/bin/uninstall_castawesome
 
 uninstall:
 	rm -rf /usr/local/share/castawesome

@@ -83,8 +83,15 @@ class GUI:
 		twitch_key = fob.read().rstrip()
 		fob.close()
 		
+		# Setting up audio channels for audio input
+		self.audiochannels = ""
+		
+		for x in range(int(self.settings.get_audio_channels())):
+			self.audiochannels += " -f alsa -ac " + str(x + 1) + " -i pulse"
+		print self.audiochannels
+		
 		# Avconv is supplied with user's settings and executed
-		command = str('avconv -f x11grab' + ' -show_region ' + self.settings.get_show_region() + ' -s ' + self.settings.get_inres() + ' -r "' + self.settings.get_fps() + '" -i :0.0+' + self.settings.get_x_offset() + ',' + self.settings.get_y_offset() + ' -f alsa -ac 2 -i pulse -vcodec libx264 -s ' + self.settings.get_outres() + ' -preset ' + self.settings.get_quality() + ' -acodec libmp3lame -ar 44100 -threads ' + self.settings.get_threads() + ' -qscale 3 -b ' + self.settings.get_bitrate() + ' -bufsize 512k -f flv "rtmp://live.justin.tv/app/' + twitch_key + '"')
+		command = str('avconv -f x11grab' + ' -show_region ' + self.settings.get_show_region() + ' -s ' + self.settings.get_inres() + ' -r "' + self.settings.get_fps() + '" -i :0.0+' + self.settings.get_x_offset() + ',' + self.settings.get_y_offset() + '  ' + self.audiochannels + ' -vcodec libx264 -s ' + self.settings.get_outres() + ' -preset ' + self.settings.get_quality() + ' -acodec libmp3lame -ar 44100 -threads ' + self.settings.get_threads() + ' -qscale 3 -b ' + self.settings.get_bitrate() + ' -bufsize 512k -f flv "rtmp://live.justin.tv/app/' + twitch_key + '"')
 		# Start a subprocess to handle avconv
 		self.process = subprocess.Popen(shlex.split(command))
 		
@@ -114,6 +121,7 @@ class Settings:
 	y_offset = ""			# Y offset
 	fps = ""				# Frames per Second
 	quality = ""			# Quality (medium, fast, etc.)
+	audio_channels = ""		# Number of Pulseaudio channels
 	bitrate = ""			# Bitrate (+300k usually is fine)
 	threads = ""			# Amount of threads
 
@@ -130,6 +138,7 @@ class Settings:
 			fob.write("0\n")
 			fob.write("25\n")
 			fob.write("medium\n")
+			fob.write("1")
 			fob.write("400k\n")
 			fob.write("1\n")
 			fob.write("1")
@@ -155,9 +164,10 @@ class Settings:
 			self.y_offset = lines[3].lstrip().rstrip()
 			self.fps = lines[4].lstrip().rstrip()
 			self.quality = lines[5].lstrip().rstrip()
-			self.bitrate = lines[6].lstrip().rstrip()
-			self.threads = lines[7].lstrip().rstrip()
-			self.show_region = lines[8].lstrip().rstrip()
+			self.audio_channels = lines[6].lstrip().rstrip()
+			self.bitrate = lines[7].lstrip().rstrip()
+			self.threads = lines[8].lstrip().rstrip()
+			self.show_region = lines[9].lstrip().rstrip()
 		except:
 			print "Couldn't load config files!"
 			
@@ -177,6 +187,7 @@ class Settings:
 		self.builder.get_object("entry_yoffset").set_text(self.y_offset)
 		self.builder.get_object("entry_fps").set_text(self.fps)
 		self.builder.get_object("entry_quality").set_text(self.quality)
+		self.builder.get_object("entry_audiochannels").set_text(self.audio_channels)
 		self.builder.get_object("entry_bitrate").set_text(self.bitrate)
 		self.builder.get_object("entry_threads").set_text(self.threads)
 		self.builder.get_object("entry_region").set_text(self.show_region)
@@ -203,6 +214,9 @@ class Settings:
 
 	def get_quality(self):
 		return self.quality
+		
+	def get_audio_channels(self):
+		return self.audio_channels
 
 	def get_bitrate(self):
 		return self.bitrate
@@ -220,6 +234,7 @@ class Settings:
 		self.y_offset = self.builder.get_object("entry_yoffset").get_text()
 		self.fps = self.builder.get_object("entry_fps").get_text()
 		self.quality = self.builder.get_object("entry_quality").get_text()
+		self.audio_channels = self.builder.get_object("entry_audiochannels").get_text()
 		self.bitrate = self.builder.get_object("entry_bitrate").get_text()
 		self.threads = self.builder.get_object("entry_threads").get_text()
 		self.show_region = self.builder.get_object("entry_region").get_text()
@@ -233,6 +248,7 @@ class Settings:
 		fob.write(self.y_offset + "\n")
 		fob.write(self.fps + "\n")
 		fob.write(self.quality + "\n")
+		fob.write(self.audio_channels + "\n")
 		fob.write(self.bitrate + "\n")
 		fob.write(self.threads + "\n")
 		fob.write(self.show_region + "\n")
