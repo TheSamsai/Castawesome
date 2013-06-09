@@ -1,3 +1,19 @@
+	#09.06.2013#
+Previous multi-input audio update reverted
+
+It seems I went ahead with the update too fast. According to my testing
+the multi-input audio IS NOT YET working. When I tested it I messed with
+the audio settings so that it simply picked up my voice from the stream
+and made me think it worked fine, even though it really didn't.
+
+I am sorry for causing any confusion and I hope to get this fixed eventually.
+Until then you should use either this version, which has all additional
+audio settings reverted back or the older 0.12.8 version.
+
+Sami
+
+-----------------------------------------------------------------------
+	
 	#05.06.2013#
 We finally have multiple input audio!
 
