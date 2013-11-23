@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from gi.repository import Gtk, GdkPixbuf, Gdk
+from gi.repository import Gtk, GdkPixbuf, Gdk, GLib
 import gobject
 import os, sys, signal
 import time
@@ -61,7 +61,7 @@ class GUI:
 		self.counter_min = 0
 		
 		# Update timer every second
-		gobject.timeout_add_seconds(1, self.update_timer)
+		GLib.timeout_add_seconds(1, self.update_timer)
 
 	def on_toggle_streaming_toggled(self, window):
 		# Are we streaming, or not?
