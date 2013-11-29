@@ -22,6 +22,7 @@ import os, sys, signal
 import time
 import thread
 import subprocess, shlex
+import json
 
 
 # UI files, two for each window
@@ -121,24 +122,26 @@ class Settings:
 	threads = ""			# Amount of threads
 
 	def __init__(self):
-		if not os.system("mkdir ~/.config/castawesome"):
+		try:
+			os.mkdir("mkdir ~/.config/castawesome")
 			# Configuration files are missing, create them and add default settings
 			os.system("touch ~/.config/castawesome/.twitch_key")
 			
 			# Default settings for the user
 			fob = open(home + "/.config/castawesome/config.txt", "w")
-			fob.write("1280x720\n")
-			fob.write("1280x720\n")
-			fob.write("0\n")
-			fob.write("0\n")
-			fob.write("25\n")
-			fob.write("medium\n")
-			fob.write("400k\n")
-			fob.write("1\n")
-			fob.write("1")
+			fob.write("""{
+	"inres" : "1280x720",\n
+	"outres" : "1280x720",\n
+	"x_offset" : "0",\n
+	"y_offset" : "0",\n
+	"fps" : "25",\n
+	"quality" : "medium",\n
+	"bitrate" : "400k",\n
+	"threads" : "1",\n
+	"show_region" : "1"\n
+}""")
 			fob.close()
-			
-		else:
+		except:
 			print "Config files exist..."
 		try:
 			fob = open(home + "/.config/castawesome/.twitch_key", "r")
@@ -149,19 +152,25 @@ class Settings:
 				warning = StreamKey()
 			
 			fob = open(home + "/.config/castawesome/config.txt", "r")
-			lines = fob.readlines()
+			lines = fob.read()
 			fob.close()
-			
-			self.inres = lines[0].lstrip().rstrip()
-			self.outres = lines[1].lstrip().rstrip()
-			self.x_offset = lines[2].lstrip().rstrip()
-			self.y_offset = lines[3].lstrip().rstrip()
-			self.fps = lines[4].lstrip().rstrip()
-			self.quality = lines[5].lstrip().rstrip()
-			self.bitrate = lines[6].lstrip().rstrip()
-			self.threads = lines[7].lstrip().rstrip()
-			self.show_region = lines[8].lstrip().rstrip()
+			if not "{" in lines[0]:
+				print "Using legacy config loader..."
+				self.load_legacy_config()
+			else:
+				lines = json.loads(lines)
+				
+				self.inres = lines["inres"]
+				self.outres = lines["outres"]
+				self.x_offset = lines["x_offset"]
+				self.y_offset = lines["y_offset"]
+				self.fps = lines["fps"]
+				self.quality = lines["quality"]
+				self.bitrate = lines["bitrate"]
+				self.threads = lines["threads"]
+				self.show_region = lines["show_region"]
 		except:
+			print "An error occured: " + str(sys.exc_info())
 			print "Couldn't load config files!"
 			
 		self.builder = Gtk.Builder()
@@ -229,21 +238,51 @@ class Settings:
 
 		# Save configs in homefolder
 		fob = open(home + "/.config/castawesome/config.txt", "w")
-
-		fob.write(self.inres + "\n")
-		fob.write(self.outres + "\n")
-		fob.write(self.x_offset + "\n")
-		fob.write(self.y_offset + "\n")
-		fob.write(self.fps + "\n")
-		fob.write(self.quality + "\n")
-		fob.write(self.bitrate + "\n")
-		fob.write(self.threads + "\n")
-		fob.write(self.show_region + "\n")
+		d = {"inres" : self.inres, "outres" : self.outres, "x_offset" : self.x_offset,
+		"y_offset" : self.y_offset, "fps" : self.fps, "quality" : self.quality,
+		"bitrate" : self.bitrate, "threads" : self.threads, "show_region" : self.show_region
+		}
+	
+		fob.write("""{
+	"inres": "%(inres)s",
+	"outres": "%(outres)s",
+	"x_offset": "%(x_offset)s",
+	"y_offset": "%(y_offset)s",
+	"fps": "%(fps)s",
+	"quality": "%(quality)s",
+	"bitrate": "%(bitrate)s",
+	"threads": "%(threads)s",
+	"show_region": "%(show_region)s"\n}""" % d)
 		
 		fob.close()
 		
 	def on_button_reset_streamkey_clicked(self, window):
 		warning = StreamKey()
+		
+	def load_legacy_config(self):
+		try:
+			fob = open(home + "/.config/castawesome/.twitch_key", "r")
+			key = fob.read()
+			fob.close()
+			
+			if key == "":
+				warning = StreamKey()
+			
+			fob = open(home + "/.config/castawesome/config.txt", "r")
+			lines = fob.readlines()
+			fob.close()
+			
+			self.inres = lines[0].strip()
+			self.outres = lines[1].strip()
+			self.x_offset = lines[2].strip()
+			self.y_offset = lines[3].strip()
+			self.fps = lines[4].strip()
+			self.quality = lines[5].strip()
+			self.bitrate = lines[6].strip()
+			self.threads = lines[7].strip()
+			self.show_region = lines[8].strip()
+		except IOError:
+			print "Couldn't load config files!"
 
 # Stream key warning dialog
 class StreamKey():
