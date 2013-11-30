@@ -48,8 +48,12 @@ class GUI:
 		# Find the UI file
 		try:
 			self.builder.add_from_file(UI_FILE1)
+			self.builder.get_object('image').set_from_file("CastA1.png")
+			self.builder.get_object('window').set_icon_from_file("IconCA.png")
 		except:
 			self.builder.add_from_file(UI_FILE2)
+			self.builder.get_object('image').set_from_file("/usr/local/share/castawesome/ui/CastA1.png")
+			self.builder.get_object('window').set_icon_from_file("/usr/local/share/castawesome/ui/IconCA.png")
 		self.builder.connect_signals(self)
 
 		window = self.builder.get_object('window')
@@ -136,15 +140,15 @@ class Settings:
 			# Default settings for the user
 			fob = open(os.path.join(home, ".config/castawesome/config.txt"), "w")
 			fob.write("""{
-	"inres" : "1280x720",\n
-	"outres" : "1280x720",\n
-	"x_offset" : "0",\n
-	"y_offset" : "0",\n
-	"fps" : "25",\n
-	"quality" : "medium",\n
-	"bitrate" : "400k",\n
-	"threads" : "1",\n
-	"show_region" : "1"\n
+	"inres": "1280x720",\n
+	"outres": "1280x720",\n
+	"x_offset": "0",\n
+	"y_offset": "0",\n
+	"fps": "25",\n
+	"quality": "medium",\n
+	"bitrate": "400k",\n
+	"threads": "1",\n
+	"show_region": "1"\n
 }""")
 			fob.close()
 		except:

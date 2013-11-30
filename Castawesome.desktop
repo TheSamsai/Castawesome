@@ -9,3 +9,5 @@ StartupNotify=true
 Keywords=castawesome;livestream;twitch;
 Categories=Gnome;Internet;
 
+Icon=/home/sami/Ohjelmointi/Projektit/castawesome/IconCA.png
+GenericName=
