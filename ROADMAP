@@ -1,9 +1,10 @@
 - See if xdg directories can be used for .ui files
-- print or print()?
-- Use Python's format expressions instead of string concatenation
-- os.system("mkdir") to os.mkdir? 
+- print or print()?  ---  print statements will be changed over to print() once Py3K is more relevant
+- Use Python's format expressions instead of string concatenation  ---  Partially done, still needs some work on some areas
+- os.system("mkdir") to os.mkdir?  ---   Done!
 - Better settings storage, json or configparser?  ---  Done using JSON, can also load legacy configs!
 - lstrip().rstrip() to strip()  ----  Done!
-- Use os.path.join() when joining paths (safer?)
+- Use os.path.join() when joining paths (safer?)  ---  Done, every path concatenation is now done using os.path.join()
 - Check failure conditions instead of reacting to them
 - Check the existance of external tools before calling them
+- Better modularity?

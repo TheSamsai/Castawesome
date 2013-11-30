@@ -80,15 +80,21 @@ class GUI:
 		self.about = About()
 	def stream(self):
 		# Twitch key needs to be read to stream video
-		fob = open(home + "/.config/castawesome/.twitch_key", "r")
-		twitch_key = fob.read().rstrip()
+		fob = open(os.path.join(home, ".config/castawesome/.twitch_key"), "r")
+		twitch_key = fob.read().strip()
 		fob.close()
 		
 		# Setting up audio channels for audio input
-		self.audiochannels = "-f alsa -ac 2 -i pulse"
+		# self.audiochannels = "-f alsa -ac 2 -i pulse"
 		
 		# Avconv is supplied with user's settings and executed
-		command = str('avconv -f x11grab' + ' -show_region ' + self.settings.get_show_region() + ' -s ' + self.settings.get_inres() + ' -r "' + self.settings.get_fps() + '" -i :0.0+' + self.settings.get_x_offset() + ',' + self.settings.get_y_offset() + '  ' + self.audiochannels + ' -vcodec libx264 -s ' + self.settings.get_outres() + ' -preset ' + self.settings.get_quality() + ' -acodec libmp3lame -ar 44100 -threads ' + self.settings.get_threads() + ' -qscale 3 -b ' + self.settings.get_bitrate() + ' -bufsize 512k -f flv "rtmp://live.justin.tv/app/' + twitch_key + '"')
+		parameters = {"inres" : self.settings.get_inres(), "outres" : self.settings.get_outres(), "x_offset" : self.settings.get_x_offset(),
+		"y_offset" : self.settings.get_y_offset(), "fps" : self.settings.get_fps(), "quality" : self.settings.get_quality(),
+		"bitrate" : self.settings.get_bitrate(), "threads" : self.settings.get_threads(), "show_region" : self.settings.get_show_region()
+		}
+		
+		command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f alsa -ac 2 -i pulse -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b %(bitrate)s -bufsize 512k -f flv "rtmp://live.justin.tv/app/' + twitch_key + '"') % parameters
+		print command
 		# Start a subprocess to handle avconv
 		self.process = subprocess.Popen(shlex.split(command))
 		
@@ -123,12 +129,12 @@ class Settings:
 
 	def __init__(self):
 		try:
-			os.mkdir("mkdir ~/.config/castawesome")
+			os.mkdir(os.path.join(home, ".config/castawesome"))
 			# Configuration files are missing, create them and add default settings
 			os.system("touch ~/.config/castawesome/.twitch_key")
 			
 			# Default settings for the user
-			fob = open(home + "/.config/castawesome/config.txt", "w")
+			fob = open(os.path.join(home, ".config/castawesome/config.txt"), "w")
 			fob.write("""{
 	"inres" : "1280x720",\n
 	"outres" : "1280x720",\n
@@ -144,16 +150,17 @@ class Settings:
 		except:
 			print "Config files exist..."
 		try:
-			fob = open(home + "/.config/castawesome/.twitch_key", "r")
+			fob = open(os.path.join(home, ".config/castawesome/.twitch_key"), "r")
 			key = fob.read()
 			fob.close()
 			
 			if key == "":
 				warning = StreamKey()
 			
-			fob = open(home + "/.config/castawesome/config.txt", "r")
+			fob = open(os.path.join(home, ".config/castawesome/config.txt"), "r")
 			lines = fob.read()
 			fob.close()
+			# What if user has legacy config files?
 			if not "{" in lines[0]:
 				print "Using legacy config loader..."
 				self.load_legacy_config()
@@ -237,12 +244,13 @@ class Settings:
 		self.show_region = self.builder.get_object("entry_region").get_text()
 
 		# Save configs in homefolder
-		fob = open(home + "/.config/castawesome/config.txt", "w")
+		fob = open(os.path.join(home, ".config/castawesome/config.txt"), "w")
+		# We will use dictionary based formatting expressions
 		d = {"inres" : self.inres, "outres" : self.outres, "x_offset" : self.x_offset,
 		"y_offset" : self.y_offset, "fps" : self.fps, "quality" : self.quality,
 		"bitrate" : self.bitrate, "threads" : self.threads, "show_region" : self.show_region
 		}
-	
+		
 		fob.write("""{
 	"inres": "%(inres)s",
 	"outres": "%(outres)s",
@@ -258,17 +266,18 @@ class Settings:
 		
 	def on_button_reset_streamkey_clicked(self, window):
 		warning = StreamKey()
-		
+	
+	# Function to make the program backwards compatible with the old config files
 	def load_legacy_config(self):
 		try:
-			fob = open(home + "/.config/castawesome/.twitch_key", "r")
+			fob = open(os.path.join(home, ".config/castawesome/.twitch_key"), "r")
 			key = fob.read()
 			fob.close()
 			
 			if key == "":
 				warning = StreamKey()
 			
-			fob = open(home + "/.config/castawesome/config.txt", "r")
+			fob = open(os.path.join(home, ".config/castawesome/config.txt"), "r")
 			lines = fob.readlines()
 			fob.close()
 			
@@ -299,7 +308,7 @@ class StreamKey():
 		self.window.show_all()
 	
 	def on_button_ok_clicked(self, window):
-		fob = open(home + "/.config/castawesome/.twitch_key", "w")
+		fob = open(os.path.join(home, ".config/castawesome/.twitch_key"), "w")
 		fob.write(self.builder.get_object("entry_streamkey").get_text())
 		fob.close()
 		
