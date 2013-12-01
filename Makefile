@@ -1,10 +1,33 @@
 version=0.13
+avconv_exists := $(shell which avconv)
+ffmpeg_exists := $(shell which ffmpeg)
 
 all:
+ifdef avconv_exists
+	@echo "Program 'avconv' found, using that..."
+else
+	@echo "Couldn't find 'avconv'."
+ifdef ffmpeg_exists
+	@echo "Program 'ffmpeg' found, using that..."
+	sed -i 's/avconv/ffmpeg/g' castawesome.py
+else
+	@echo "Couldn't find necessary tools. Install 'avconv' or 'ffmpeg'."
+endif
+endif
 	./castawesome.py test
 
 install:
-	which avconv
+ifdef avconv_exists
+	@echo "Program 'avconv' found, using that..."
+else
+	@echo "Couldn't find 'avconv'."
+ifdef ffmpeg_exists
+	@echo "Program 'ffmpeg' found, using that..."
+	sed -i 's/avconv/ffmpeg/g' castawesome.py
+else
+	@echo "Couldn't find necessary tools. Install 'avconv' or 'ffmpeg'."
+endif
+endif
 	mkdir -p /usr/local/share/castawesome/ui
 	mkdir -p /usr/local/share/castawesome/doc
 	cp *.ui /usr/local/share/castawesome/ui
