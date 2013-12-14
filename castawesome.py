@@ -97,7 +97,7 @@ class GUI:
 		"bitrate" : self.settings.get_bitrate(), "threads" : self.settings.get_threads(), "show_region" : self.settings.get_show_region()
 		}
 		
-		command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f alsa -ac 2 -i pulse -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b %(bitrate)s -bufsize 512k -f flv "rtmp://live.justin.tv/app/' + twitch_key + '"') % parameters
+		command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f alsa -ac 2 -i pulse -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b %(bitrate)s -minrate %(bitrate)s -maxrate %(bitrate)s -g 2 -bufsize 512k -f flv "rtmp://live.twitch.tv/app/' + twitch_key + '"') % parameters
 		print command
 		# Start a subprocess to handle avconv
 		self.process = subprocess.Popen(shlex.split(command))
