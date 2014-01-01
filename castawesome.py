@@ -94,10 +94,11 @@ class GUI:
 		# Avconv is supplied with user's settings and executed
 		parameters = {"inres" : self.settings.get_inres(), "outres" : self.settings.get_outres(), "x_offset" : self.settings.get_x_offset(),
 		"y_offset" : self.settings.get_y_offset(), "fps" : self.settings.get_fps(), "quality" : self.settings.get_quality(),
-		"bitrate" : self.settings.get_bitrate(), "threads" : self.settings.get_threads(), "show_region" : self.settings.get_show_region()
+		"bitrate" : self.settings.get_bitrate(), "threads" : self.settings.get_threads(), "show_region" : self.settings.get_show_region(),
+		"service" : self.settings.get_service()
 		}
 		
-		command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f alsa -ac 2 -i pulse -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b %(bitrate)s -minrate %(bitrate)s -maxrate %(bitrate)s -g 2 -bufsize 512k -f flv "rtmp://live.twitch.tv/app/' + twitch_key + '"') % parameters
+		command = str('ffmpeg -f x11grab -show_region %(show_region)s -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f alsa -ac 1 -i pulse -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b %(bitrate)s -minrate %(bitrate)s -maxrate %(bitrate)s -bufsize 512k -f flv "%(service)s' + twitch_key + '"') % parameters
 		print command
 		# Start a subprocess to handle avconv
 		self.process = subprocess.Popen(shlex.split(command))
@@ -118,6 +119,9 @@ class GUI:
 		return True
 		
 	def destroy(window, self):
+		if self.streaming:
+			# Kill the subprocess and end the stream
+			self.process.kill()
 		Gtk.main_quit()
 
 # Settings manager for user's settings
@@ -130,6 +134,7 @@ class Settings:
 	quality = ""			# Quality (medium, fast, etc.)
 	bitrate = ""			# Bitrate (+300k usually is fine)
 	threads = ""			# Amount of threads
+	service = ""			# The streaming service in use
 
 	def __init__(self):
 		try:
@@ -148,7 +153,8 @@ class Settings:
 	"quality": "medium",\n
 	"bitrate": "400k",\n
 	"threads": "1",\n
-	"show_region": "1"\n
+	"show_region": "1",\n
+	"service": "rtmp://live.twitch.tv/app/"\n
 }""")
 			fob.close()
 		except:
@@ -170,6 +176,7 @@ class Settings:
 				self.load_legacy_config()
 			else:
 				lines = json.loads(lines)
+				print lines
 				
 				self.inres = lines["inres"]
 				self.outres = lines["outres"]
@@ -180,6 +187,10 @@ class Settings:
 				self.bitrate = lines["bitrate"]
 				self.threads = lines["threads"]
 				self.show_region = lines["show_region"]
+				try:
+					self.service = lines["service"]
+				except:
+					self.service = "Twitch.tv"
 		except:
 			print "An error occured: " + str(sys.exc_info())
 			print "Couldn't load config files!"
@@ -203,6 +214,18 @@ class Settings:
 		self.builder.get_object("entry_bitrate").set_text(self.bitrate)
 		self.builder.get_object("entry_threads").set_text(self.threads)
 		self.builder.get_object("entry_region").set_text(self.show_region)
+		
+		services = [
+			['rtmp://live.twitch.tv/app/', 'Twitch.tv'],
+			['rtmp://a.rtmp.youtube.com/live2/', 'YouTube'],
+			['rtmp://live.hitbox.tv/push/', 'Hitbox.tv'],
+		
+		]
+		
+		for item in services:
+			self.builder.get_object("list_services").append(item)
+		
+		self.builder.get_object("combo_service_selector").set_active(0)
 		
 		# Apply previous configs
 		self.on_button_apply_clicked(0)
@@ -236,6 +259,15 @@ class Settings:
 	def get_show_region(self):
 		return self.show_region
 		
+	def get_service(self):
+		return self.service
+	
+	def on_combo_service_selector_changed(self, window):
+		model = self.builder.get_object("combo_service_selector").get_model()
+		active = self.builder.get_object("combo_service_selector").get_active()
+		if active >= 0:
+			self.service = model[active][0]
+		
 	def on_button_apply_clicked(self, window):
 		self.inres = self.builder.get_object("entry_inres").get_text()
 		self.outres = self.builder.get_object("entry_outres").get_text()
@@ -252,7 +284,8 @@ class Settings:
 		# We will use dictionary based formatting expressions
 		d = {"inres" : self.inres, "outres" : self.outres, "x_offset" : self.x_offset,
 		"y_offset" : self.y_offset, "fps" : self.fps, "quality" : self.quality,
-		"bitrate" : self.bitrate, "threads" : self.threads, "show_region" : self.show_region
+		"bitrate" : self.bitrate, "threads" : self.threads, "show_region" : self.show_region,
+		"service" : self.service
 		}
 		
 		fob.write("""{
@@ -264,7 +297,8 @@ class Settings:
 	"quality": "%(quality)s",
 	"bitrate": "%(bitrate)s",
 	"threads": "%(threads)s",
-	"show_region": "%(show_region)s"\n}""" % d)
+	"show_region": "%(show_region)s",
+	"service": "%(service)s"\n}""" % d)
 		
 		fob.close()
 		
