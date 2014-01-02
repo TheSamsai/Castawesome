@@ -225,7 +225,12 @@ class Settings:
 		for item in services:
 			self.builder.get_object("list_services").append(item)
 		
-		self.builder.get_object("combo_service_selector").set_active(0)
+		if self.service == 'rtmp://live.twitch.tv/app/':
+			self.builder.get_object("combo_service_selector").set_active(0)
+		elif self.service == 'rtmp://a.rtmp.youtube.com/live2/':
+			self.builder.get_object("combo_service_selector").set_active(1)
+		elif self.service == 'rtmp://live.hitbox.tv/push/':
+			self.builder.get_object("combo_service_selector").set_active(2)
 		
 		# Apply previous configs
 		self.on_button_apply_clicked(0)

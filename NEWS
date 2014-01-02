@@ -1,3 +1,17 @@
+	#01.01.2014
+More Streaming Service Variety!
+
+As of now Castawesome natively supports (that is without hacks) three
+livestreaming services: Twitch.tv, Hitbox.tv and YouTube. I came up with
+this idea when Twitch pretty much broke their servers and I had to use
+YouTube's RTMP servers for a while. To use them, however, you had to
+crack open your text editor and edit the avconv/ffmpeg parameters manually,
+which is not user-friendly. You might remember that I originally wrote
+Castawesome to escape the CLI avconv/ffmpeg scripts and that's what I
+intend to do now.
+
+As a side-note: happy new year! May it bring more livestreams and other
+goodness to Linux users all over the world!
 	#09.06.2013#
 Previous multi-input audio update reverted
 
