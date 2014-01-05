@@ -5,6 +5,7 @@ ffmpeg_exists := $(shell which ffmpeg)
 all:
 ifdef avconv_exists
 	@echo "Program 'avconv' found, using that..."
+	sed -i 's/ffmpeg/avconv/g' castawesome.py
 else
 	@echo "Couldn't find 'avconv'."
 ifdef ffmpeg_exists
