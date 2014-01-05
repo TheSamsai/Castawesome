@@ -44,6 +44,12 @@ uninstall:
 	rm -f /usr/local/bin/castawesome /usr/local/bin/uninstall_castawesome
 	rm -f /usr/local/share/applications/Castawesome.desktop
 
+use_avconv:
+	sed -i 's/ffmpeg/avconv/g' castawesome.py
+
+use_ffmpeg:
+	sed -i 's/avconv/ffmpeg/g' castawesome.py
+
 package:
 	rm -f castawesome*.tar.gz
 	tar czf castawesome-$(version).tar.gz *
