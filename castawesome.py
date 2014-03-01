@@ -100,7 +100,7 @@ class GUI:
 		
 		command = str('ffmpeg -f x11grab -show_region %(show_region)s -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f alsa -ac 1 -i pulse -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b %(bitrate)s -minrate %(bitrate)s -maxrate %(bitrate)s -bufsize 512k -f flv "%(service)s' + twitch_key + '"') % parameters
 		print command
-		# Start a subprocess to handle avconv
+		# Start a subprocess to handle ffmpeg
 		self.process = subprocess.Popen(shlex.split(command))
 		
 	def update_timer(self):
@@ -112,13 +112,13 @@ class GUI:
 				self.counter_sec = 0
 
 			label = self.builder.get_object("label_timer")
-			label.set_text(str(self.counter_min) + ":" + str(self.counter_sec))
+			label.set_text("Time: " + str(self.counter_min) + ":" + str(self.counter_sec))
 		else:
 			self.counter_min = 0
 			self.counter_sec = 0
 		return True
 		
-	def destroy(window, self):
+	def destroy(self, window):
 		if self.streaming:
 			# Kill the subprocess and end the stream
 			self.process.kill()
