@@ -98,7 +98,7 @@ class GUI:
 		"service" : self.settings.get_service()
 		}
 		
-		command = str('ffmpeg -f x11grab -show_region %(show_region)s -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f alsa -ac 1 -i pulse -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b %(bitrate)s -minrate %(bitrate)s -maxrate %(bitrate)s -bufsize 512k -f flv "%(service)s' + twitch_key + '"') % parameters
+		command = str('ffmpeg -f x11grab -show_region %(show_region)s -g 2 -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f alsa -ac 1 -i pulse -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b %(bitrate)s -minrate %(bitrate)s -maxrate %(bitrate)s -bufsize 512k -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
 		print command
 		# Start a subprocess to handle ffmpeg
 		self.process = subprocess.Popen(shlex.split(command))
