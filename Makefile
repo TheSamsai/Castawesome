@@ -41,8 +41,9 @@ use_ffmpeg:
 	sed -i 's/avconv/ffmpeg/g' castawesome.py
 
 package:
-	rm -f castawesome*.tar.gz
-	tar czf castawesome-$(version).tar.gz *
+	rm -rf castawesome*.tar.gz castawesome/
+	rsync -av --progress ./ castawesome --exclude castawesome
+	tar zczf castawesome-$(version).tar.gz castawesome
 
 clean:
 	rm -f castawesome*.tar.gz
