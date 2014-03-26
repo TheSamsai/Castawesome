@@ -72,7 +72,8 @@ class GUI:
 		# Are we streaming, or not?
 		if self.streaming:
 			# Kill the subprocess and end the stream
-			self.process.kill()
+			#self.process.kill()
+			os.system("killall ffmpeg")
 		else:
 			self.stream()
 		self.streaming = not self.streaming
@@ -95,13 +96,17 @@ class GUI:
 		parameters = {"inres" : self.settings.get_inres(), "outres" : self.settings.get_outres(), "x_offset" : self.settings.get_x_offset(),
 		"y_offset" : self.settings.get_y_offset(), "fps" : self.settings.get_fps(), "quality" : self.settings.get_quality(),
 		"bitrate" : self.settings.get_bitrate(), "threads" : self.settings.get_threads(), "show_region" : self.settings.get_show_region(),
-		"service" : self.settings.get_service()
+		"service" : self.settings.get_service(), "watermark" : '-vf "movie=watermark.png [watermark]; [in][watermark] overlay=0:0 [out]"'
 		}
 		
-		command = str('ffmpeg -f x11grab -show_region %(show_region)s -g 2 -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f alsa -ac 1 -i pulse -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b %(bitrate)s -minrate %(bitrate)s -maxrate %(bitrate)s -bufsize 512k -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
+		if self.settings.get_watermark():
+			command = str('ffmpeg -f x11grab -show_region %(show_region)s -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f alsa -ac 1 -i pulse -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b %(bitrate)s -minrate %(bitrate)s -maxrate %(bitrate)s -bufsize 512k -pix_fmt yuv420p -f flv - | ffmpeg -i - -preset %(quality)s -b %(bitrate)s %(watermark)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
+		else:
+			command = str('ffmpeg -f x11grab -show_region %(show_region)s -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f alsa -ac 1 -i pulse -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b %(bitrate)s -minrate %(bitrate)s -maxrate %(bitrate)s -bufsize 512k -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
 		print command
 		# Start a subprocess to handle ffmpeg
-		self.process = subprocess.Popen(shlex.split(command))
+		#self.process = subprocess.Popen(shlex.split(command))
+		os.system(command + "&")
 		
 	def update_timer(self):
 		# Just minute/second counter, nothing fancy here
@@ -134,6 +139,7 @@ class Settings:
 	quality = ""			# Quality (medium, fast, etc.)
 	bitrate = ""			# Bitrate (+300k usually is fine)
 	threads = ""			# Amount of threads
+	watermark = ""			# Enable/Disable watermarking
 	service = ""			# The streaming service in use
 
 	def __init__(self):
@@ -264,15 +270,27 @@ class Settings:
 	def get_show_region(self):
 		return self.show_region
 		
+	def get_watermark(self):
+		return self.watermark
+		
 	def get_service(self):
 		return self.service
+	
+	def get_watermark(self):
+		return self.watermark
 	
 	def on_combo_service_selector_changed(self, window):
 		model = self.builder.get_object("combo_service_selector").get_model()
 		active = self.builder.get_object("combo_service_selector").get_active()
 		if active >= 0:
 			self.service = model[active][0]
-		
+	
+	def on_toggle_watermarking_toggled(self, window):
+		if self.watermark == True:
+			self.watermark = False
+		else:
+			self.watermark = True
+	
 	def on_button_apply_clicked(self, window):
 		self.inres = self.builder.get_object("entry_inres").get_text()
 		self.outres = self.builder.get_object("entry_outres").get_text()
