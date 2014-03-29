@@ -199,6 +199,9 @@ class Settings:
 					self.service = lines["service"]
 				except:
 					self.service = "Twitch.tv"
+				self.watermark = bool(lines["use_watermark"])
+				self.watermark_file = lines["watermark_file"]
+				
 		except:
 			print "An error occured: " + str(sys.exc_info())
 			print "Couldn't load config files!"
@@ -222,6 +225,8 @@ class Settings:
 		self.builder.get_object("entry_bitrate").set_text(self.bitrate)
 		self.builder.get_object("entry_threads").set_text(self.threads)
 		self.builder.get_object("entry_region").set_text(self.show_region)
+		self.builder.get_object("switch_watermark").set_active(self.watermark)
+		self.builder.get_object("filechooserbutton_watermark").set_filename(self.watermark_file)
 		
 		services = [
 			['rtmp://live.twitch.tv/app/', 'Twitch.tv'],
