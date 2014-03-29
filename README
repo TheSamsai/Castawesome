@@ -3,8 +3,8 @@
 			
 Short introduction:
 	Castawesome is GUI wrapper around a script, that is used to stream
-	video from Linux desktop to Twitch.tv streaming site. It can be
-	used, for example, in live screencasts or live gaming screencasts.
+	video from Linux desktop to Twitch.tv, Hitbox.tv or YouTube streaming sites. It can be
+	used, for example, for live screencasts or live gaming screencasts.
 	
 	The script (and thus also Castawesome) is built around tool called
 	"avconv", which is one of the tools Libav developers provide.
@@ -42,12 +42,11 @@ Installation and usage:
 	2.	Verify that you have installed Python 2, GTK-3 libraries and
 		libav-tools. (Dependencies are listed in DEPENDS file)
 	3.	Run "make" in the folder you extracted Castawesome files into,
-		to verify you have all necessary GTK libraries installed.
-		If test is succesful, you will see "Castawesome is ok" in the
+		to verify you have all the necessary GTK libraries installed.
+		If the test is succesful, you will see "Castawesome is ok" in the
 		terminal.
-	4.	You can now install Castawesome system-wide with a command
-		similar to "sudo make install" or leave it to the current
-		folder.
+	4.	You can now install Castawesome system-wide with the command
+		"sudo make install" or leave it to the current folder.
 	5.	Run Castawesome by either double-clicking the "castawesome.py"
 		file or by running "castawesome" in terminal to create config
 		files for your user.

@@ -90,7 +90,7 @@ class GUI:
 		fob.close()
 		
 		# Setting up audio channels for audio input
-		# self.audiochannels = "-f alsa -ac 2 -i pulse"
+		# self.audiochannels = "-f alsa -ac 2 -i pulse"1280x720
 		
 		# Avconv is supplied with user's settings and executed
 		parameters = {"inres" : self.settings.get_inres(), "outres" : self.settings.get_outres(), "x_offset" : self.settings.get_x_offset(),
@@ -100,7 +100,8 @@ class GUI:
 		}
 		
 		if self.settings.get_watermark():
-			command = str('ffmpeg -f x11grab -show_region %(show_region)s -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f alsa -ac 1 -i pulse -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b %(bitrate)s -minrate %(bitrate)s -maxrate %(bitrate)s -bufsize 512k -pix_fmt yuv420p -f flv - | ffmpeg -i - -preset %(quality)s -b %(bitrate)s %(watermark)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
+			parameters["threads"] = str(int(parameters["threads"]) - 1)
+			command = str('ffmpeg -f x11grab -show_region %(show_region)s -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f alsa -ac 1 -i pulse -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -bufsize 512k -pix_fmt yuv420p -f flv - | ffmpeg -i - -s %(outres)s -threads 1 -preset %(quality)s -vcodec libx264 -acodec libmp3lame -ar 44100 -b %(bitrate)s %(watermark)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
 		else:
 			command = str('ffmpeg -f x11grab -show_region %(show_region)s -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f alsa -ac 1 -i pulse -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b %(bitrate)s -minrate %(bitrate)s -maxrate %(bitrate)s -bufsize 512k -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
 		print command

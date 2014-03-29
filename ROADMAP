@@ -8,3 +8,4 @@
 - Check failure conditions instead of reacting to them
 - Check the existance of external tools before calling them
 - Better modularity?
+- Watermarks and webcam overlay
