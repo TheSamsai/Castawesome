@@ -122,6 +122,7 @@ class GUI:
 		else:
 			self.counter_min = 0
 			self.counter_sec = 0
+			
 		return True
 		
 	def destroy(self, window):
@@ -199,9 +200,11 @@ class Settings:
 					self.service = lines["service"]
 				except:
 					self.service = "Twitch.tv"
-				self.watermark = bool(lines["use_watermark"])
-				self.watermark_file = lines["watermark_file"]
-				
+				try:
+					self.watermark = bool(lines["use_watermark"])
+					self.watermark_file = lines["watermark_file"]
+				except:
+					""
 		except:
 			print "An error occured: " + str(sys.exc_info())
 			print "Couldn't load config files!"
@@ -225,8 +228,12 @@ class Settings:
 		self.builder.get_object("entry_bitrate").set_text(self.bitrate)
 		self.builder.get_object("entry_threads").set_text(self.threads)
 		self.builder.get_object("entry_region").set_text(self.show_region)
-		self.builder.get_object("switch_watermark").set_active(self.watermark)
+		if self.watermark:
+			self.builder.get_object("switch_watermark").set_active(self.watermark)
 		self.builder.get_object("filechooserbutton_watermark").set_filename(self.watermark_file)
+		
+		if not self.watermark:
+			self.builder.get_object("box_watermarkfile").hide()
 		
 		services = [
 			['rtmp://live.twitch.tv/app/', 'Twitch.tv'],
@@ -298,11 +305,14 @@ class Settings:
 	def on_filechooserbutton_watermark_file_set(self, widget):
 		self.watermark_file = widget.get_filename()
 	
-	def on_toggle_watermarking_toggled(self, window):
-		if self.watermark == True:
-			self.watermark = False
+	def on_toggle_watermarking_toggled(self, widget):
+		self.watermark = widget.get_active()
+		
+		if self.watermark:
+			self.builder.get_object("box_watermarkfile").show()
 		else:
-			self.watermark = True
+			self.builder.get_object("box_watermarkfile").hide()
+		print self.watermark
 	
 	def on_button_apply_clicked(self, window):
 		self.inres = self.builder.get_object("entry_inres").get_text()

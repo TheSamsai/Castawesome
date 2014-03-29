@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <!-- interface-requires gtk+ 3.0 -->
-  <object class="GtkToggleAction" id="toggle_watermarking">
-    <signal name="toggled" handler="on_toggle_watermarking_toggled" swapped="no"/>
-  </object>
   <object class="GtkFileFilter" id="filefilter_watermark">
     <patterns>
       <pattern>*.png</pattern>
@@ -16,6 +13,9 @@
       <!-- column-name legible -->
       <column type="gchararray"/>
     </columns>
+  </object>
+  <object class="GtkToggleAction" id="toggle_watermarking">
+    <signal name="toggled" handler="on_toggle_watermarking_toggled" swapped="no"/>
   </object>
   <object class="GtkWindow" id="settings">
     <property name="can_focus">False</property>
@@ -398,7 +398,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkBox" id="box13">
+          <object class="GtkBox" id="box_watermarkfile">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <child>
