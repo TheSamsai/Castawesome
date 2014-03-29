@@ -96,7 +96,7 @@ class GUI:
 		parameters = {"inres" : self.settings.get_inres(), "outres" : self.settings.get_outres(), "x_offset" : self.settings.get_x_offset(),
 		"y_offset" : self.settings.get_y_offset(), "fps" : self.settings.get_fps(), "quality" : self.settings.get_quality(),
 		"bitrate" : self.settings.get_bitrate(), "threads" : self.settings.get_threads(), "show_region" : self.settings.get_show_region(),
-		"service" : self.settings.get_service(), "watermark" : '-vf "movie=watermark.png [watermark]; [in][watermark] overlay=0:0 [out]"'
+		"service" : self.settings.get_service(), "watermark" : '-vf "movie=%(watermark_file)s [watermark]; [in][watermark] overlay=0:0 [out]"' % {"watermark_file" : self.settings.get_watermark_file()}
 		}
 		
 		if self.settings.get_watermark():
@@ -141,6 +141,7 @@ class Settings:
 	bitrate = ""			# Bitrate (+300k usually is fine)
 	threads = ""			# Amount of threads
 	watermark = ""			# Enable/Disable watermarking
+	watermark_file = ""		# Filename of the watermark
 	service = ""			# The streaming service in use
 
 	def __init__(self):
@@ -274,6 +275,9 @@ class Settings:
 	def get_watermark(self):
 		return self.watermark
 		
+	def get_watermark_file(self):
+		return self.watermark_file
+		
 	def get_service(self):
 		return self.service
 	
@@ -285,6 +289,9 @@ class Settings:
 		active = self.builder.get_object("combo_service_selector").get_active()
 		if active >= 0:
 			self.service = model[active][0]
+	
+	def on_filechooserbutton_watermark_file_set(self, widget):
+		self.watermark_file = widget.get_filename()
 	
 	def on_toggle_watermarking_toggled(self, window):
 		if self.watermark == True:
@@ -309,6 +316,7 @@ class Settings:
 		d = {"inres" : self.inres, "outres" : self.outres, "x_offset" : self.x_offset,
 		"y_offset" : self.y_offset, "fps" : self.fps, "quality" : self.quality,
 		"bitrate" : self.bitrate, "threads" : self.threads, "show_region" : self.show_region,
+		"use_watermark" : str(self.watermark), "watermark_file" : self.watermark_file,
 		"service" : self.service
 		}
 		
@@ -322,6 +330,8 @@ class Settings:
 	"bitrate": "%(bitrate)s",
 	"threads": "%(threads)s",
 	"show_region": "%(show_region)s",
+	"use_watermark" : "%(use_watermark)s",
+	"watermark_file" : "%(watermark_file)s",
 	"service": "%(service)s"\n}""" % d)
 		
 		fob.close()

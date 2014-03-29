@@ -4,6 +4,11 @@
   <object class="GtkToggleAction" id="toggle_watermarking">
     <signal name="toggled" handler="on_toggle_watermarking_toggled" swapped="no"/>
   </object>
+  <object class="GtkFileFilter" id="filefilter_watermark">
+    <patterns>
+      <pattern>*.png</pattern>
+    </patterns>
+  </object>
   <object class="GtkListStore" id="list_services">
     <columns>
       <!-- column-name code -->
@@ -393,17 +398,36 @@
           </packing>
         </child>
         <child>
-          <object class="GtkComboBox" id="combo_service_selector">
+          <object class="GtkBox" id="box13">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="model">list_services</property>
-            <property name="button_sensitivity">on</property>
-            <signal name="changed" handler="on_combo_service_selector_changed" swapped="no"/>
             <child>
-              <object class="GtkCellRendererText" id="renderer"/>
-              <attributes>
-                <attribute name="text">1</attribute>
-              </attributes>
+              <object class="GtkLabel" id="label_watermark">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">Watermark: </property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkFileChooserButton" id="filechooserbutton_watermark">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="orientation">vertical</property>
+                <property name="filter">filefilter_watermark</property>
+                <property name="title" translatable="yes">Choose a file</property>
+                <signal name="file-set" handler="on_filechooserbutton_watermark_file_set" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="pack_type">end</property>
+                <property name="position">1</property>
+              </packing>
             </child>
           </object>
           <packing>
@@ -456,7 +480,27 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">10</property>
+            <property name="position">11</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkComboBox" id="combo_service_selector">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="model">list_services</property>
+            <property name="button_sensitivity">on</property>
+            <signal name="changed" handler="on_combo_service_selector_changed" swapped="no"/>
+            <child>
+              <object class="GtkCellRendererText" id="renderer"/>
+              <attributes>
+                <attribute name="text">1</attribute>
+              </attributes>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">12</property>
           </packing>
         </child>
       </object>
