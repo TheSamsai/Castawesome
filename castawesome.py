@@ -72,8 +72,9 @@ class GUI:
 		# Are we streaming, or not?
 		if self.streaming:
 			# Kill the subprocess and end the stream
-			#self.process.kill()
-			os.system("pkill ffmpeg")
+			subprocess.call("ps -ef | awk '$3 == \"" + str(self.process.pid) + "\" {print $2}' | xargs kill -9", shell=True)
+			self.process.kill()
+			#os.system("pkill ffmpeg")
 		else:
 			self.stream()
 		self.streaming = not self.streaming
@@ -106,8 +107,8 @@ class GUI:
 			command = str('ffmpeg -f x11grab -show_region %(show_region)s -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f alsa -ac 1 -i pulse -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b %(bitrate)s -minrate %(bitrate)s -maxrate %(bitrate)s -bufsize 512k -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
 		print command
 		# Start a subprocess to handle ffmpeg
-		#self.process = subprocess.Popen(shlex.split(command), shell=True, preexec_fn=os.setsid)
-		os.system(command + " &")
+		self.process = subprocess.Popen(command, shell=True)
+		#os.system(command + " &")
 		
 	def update_timer(self):
 		# Just minute/second counter, nothing fancy here
