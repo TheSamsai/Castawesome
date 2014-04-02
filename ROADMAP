@@ -9,3 +9,5 @@
 - Check the existance of external tools before calling them
 - Better modularity?
 - Watermarks and webcam overlay
+- Update stream quality controls, maybe a drop-down menu?
+- Better window/desktop geometry selection
