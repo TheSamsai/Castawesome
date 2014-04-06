@@ -1,7 +1,30 @@
-0.14.5 Release Notes
+	#06.04.2014
+Release notes for 0.14.5
 
-- Added support for simple watermarks
+As this new release has more new features than previous ones, I decided
+to write more formal release notes for this one. Instead of focusing on
+stability, like in the previous versions, I went all in on new tech that
+I found out about (mainly piping FFmpeg output to another FFmpeg process)
+and added something rather exciting. Here are the release notes:
 
+- Added support for primitive watermarking through piping-technique
+- Settings window has options for enabling/disabling watermarking and
+  choosing the PNG file that will be used for watermarks
+- The quality option is now renamed Compression and the choices are done
+  through a drop-down menu instead of a text entry.
+- Subprocessing has been updated to handle double encoding
+
+I think watermarking is a huge step forwards, though the current
+implementation is rather limited and it can cause lower framerates and
+framedrops when you are streaming something more dynamic (eg. a game) but
+if you have a more powerful computer or you want to stream something more
+static, such as slower 2D games or text, then it should still work.
+
+Hopefully you will enjoy this release!
+
+Sami
+
+-----------------------------------------------------------------------
 
 	#01.01.2014
 More Streaming Service Variety!
@@ -17,6 +40,9 @@ intend to do now.
 
 As a side-note: happy new year! May it bring more livestreams and other
 goodness to Linux users all over the world!
+
+-----------------------------------------------------------------------
+
 	#09.06.2013#
 Previous multi-input audio update reverted
 

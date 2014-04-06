@@ -1,10 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <!-- interface-requires gtk+ 3.0 -->
+  <object class="GtkToggleAction" id="toggle_watermarking">
+    <signal name="toggled" handler="on_toggle_watermarking_toggled" swapped="no"/>
+  </object>
   <object class="GtkFileFilter" id="filefilter_watermark">
     <patterns>
       <pattern>*.png</pattern>
     </patterns>
+  </object>
+  <object class="GtkListStore" id="list_presets">
+    <columns>
+      <!-- column-name code -->
+      <column type="gchararray"/>
+      <!-- column-name legible -->
+      <column type="gchararray"/>
+    </columns>
   </object>
   <object class="GtkListStore" id="list_services">
     <columns>
@@ -13,9 +24,6 @@
       <!-- column-name legible -->
       <column type="gchararray"/>
     </columns>
-  </object>
-  <object class="GtkToggleAction" id="toggle_watermarking">
-    <signal name="toggled" handler="on_toggle_watermarking_toggled" swapped="no"/>
   </object>
   <object class="GtkWindow" id="settings">
     <property name="can_focus">False</property>
@@ -218,7 +226,7 @@
               <object class="GtkLabel" id="label4">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Quality:</property>
+                <property name="label" translatable="yes">Compression:</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -227,15 +235,18 @@
               </packing>
             </child>
             <child>
-              <object class="GtkEntry" id="entry_quality">
+              <object class="GtkComboBox" id="combo_preset_selector">
                 <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="invisible_char">●</property>
-                <property name="invisible_char_set">True</property>
+                <property name="can_focus">False</property>
+                <property name="model">list_presets</property>
+                <property name="column_span_column">0</property>
+                <property name="active">1</property>
+                <property name="button_sensitivity">on</property>
+                <signal name="changed" handler="on_combo_preset_selector_changed" swapped="no"/>
               </object>
               <packing>
                 <property name="expand">False</property>
-                <property name="fill">False</property>
+                <property name="fill">True</property>
                 <property name="pack_type">end</property>
                 <property name="position">1</property>
               </packing>

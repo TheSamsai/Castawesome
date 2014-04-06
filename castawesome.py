@@ -100,11 +100,13 @@ class GUI:
 		"service" : self.settings.get_service(), "watermark" : '-vf "movie=%(watermark_file)s [watermark]; [in][watermark] overlay=0:0 [out]"' % {"watermark_file" : self.settings.get_watermark_file()}
 		}
 		
+		parameters["keyint"] = str(int(parameters["fps"] * 2))
+		
 		if self.settings.get_watermark():
 			parameters["threads"] = str(int(parameters["threads"]) - 2)
-			command = str('ffmpeg -f x11grab -show_region %(show_region)s -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f alsa -ac 1 -i pulse -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -bufsize 512k -pix_fmt yuv420p -f flv - | ffmpeg -i - -s %(outres)s -threads 2 -preset %(quality)s -vcodec libx264 -acodec libmp3lame -ar 44100 -b %(bitrate)s %(watermark)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
+			command = str('ffmpeg -f x11grab -show_region %(show_region)s -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f alsa -ac 1 -i pulse -vcodec libx264 -s %(outres)s -preset %(quality)s -g %(keyint)s -minrate %(bitrate)s -maxrate %(bitrate)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -bufsize %(bitrate)s -pix_fmt yuv420p -f flv - | ffmpeg -i - -s %(outres)s -threads %(threads)s -preset %(quality)s -vcodec libx264 -acodec libmp3lame -ar 44100 -b %(bitrate)s %(watermark)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
 		else:
-			command = str('ffmpeg -f x11grab -show_region %(show_region)s -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f alsa -ac 1 -i pulse -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b %(bitrate)s -minrate %(bitrate)s -maxrate %(bitrate)s -bufsize 512k -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
+			command = str('ffmpeg -f x11grab -show_region %(show_region)s -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f alsa -ac 1 -i pulse -vcodec libx264 -s %(outres)s -preset %(quality)s -g %(keyint)s -minrate %(bitrate)s -maxrate %(bitrate)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b %(bitrate)s -minrate %(bitrate)s -maxrate %(bitrate)s -bufsize 512k -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
 		print command
 		# Start a subprocess to handle ffmpeg
 		self.process = subprocess.Popen(command, shell=True)
@@ -200,12 +202,13 @@ class Settings:
 				try:
 					self.service = lines["service"]
 				except:
-					self.service = "Twitch.tv"
-				try:
-					self.watermark = bool(lines["use_watermark"])
-					self.watermark_file = lines["watermark_file"]
-				except:
-					""
+					self.service = "rtmp://live.twitch.tv/app/"
+				if lines["use_watermark"] == "False":
+					self.watermark = False
+				else:
+					self.watermark = True
+				self.watermark_file = lines["watermark_file"]
+				
 		except:
 			print "An error occured: " + str(sys.exc_info())
 			print "Couldn't load config files!"
@@ -225,27 +228,46 @@ class Settings:
 		self.builder.get_object("entry_xoffset").set_text(self.x_offset)
 		self.builder.get_object("entry_yoffset").set_text(self.y_offset)
 		self.builder.get_object("entry_fps").set_text(self.fps)
-		self.builder.get_object("entry_quality").set_text(self.quality)
 		self.builder.get_object("entry_bitrate").set_text(self.bitrate)
 		self.builder.get_object("entry_threads").set_text(self.threads)
 		self.builder.get_object("entry_region").set_text(self.show_region)
+		
+		# If watermarking has been enabled, set the filenames and switches
 		if self.watermark:
 			self.builder.get_object("switch_watermark").set_active(self.watermark)
-		self.builder.get_object("filechooserbutton_watermark").set_filename(self.watermark_file)
+			self.builder.get_object("filechooserbutton_watermark").set_filename(self.watermark_file)
 		
-		if not self.watermark:
-			self.builder.get_object("box_watermarkfile").hide()
-		
+		# Various "models" for service and preset lists
 		services = [
 			['rtmp://live.twitch.tv/app/', 'Twitch.tv'],
 			['rtmp://a.rtmp.youtube.com/live2/', 'YouTube'],
 			['rtmp://live.hitbox.tv/push/', 'Hitbox.tv'],
-		
 		]
 		
+		presets = [
+			['ultrafast', 'ultrafast'],
+			['superfast', 'superfast'],
+			['veryfast', 'veryfast'],
+			['faster', 'faster'],
+			['fast', 'fast'],
+			['medium', 'medium'],
+			['slow', 'slow'],
+			['slower', 'slower'],
+			['veryslow', 'veryslow'],
+		]
+		
+		# Append services and presets to the GTK's liststores
 		for item in services:
 			self.builder.get_object("list_services").append(item)
+		for otheritem in presets:
+			self.builder.get_object("list_presets").append(otheritem)
 		
+		# Stupid hack for GTK's weirdness
+		cell = Gtk.CellRendererText()
+		self.builder.get_object("combo_preset_selector").pack_start(cell, True)
+		self.builder.get_object("combo_preset_selector").add_attribute(cell, 'text', 0)
+		
+		# Set the service selector based on the loaded configs
 		if self.service == 'rtmp://live.twitch.tv/app/':
 			self.builder.get_object("combo_service_selector").set_active(0)
 		elif self.service == 'rtmp://a.rtmp.youtube.com/live2/':
@@ -253,11 +275,36 @@ class Settings:
 		elif self.service == 'rtmp://live.hitbox.tv/push/':
 			self.builder.get_object("combo_service_selector").set_active(2)
 		
+		# Do the same to quality (compression) presets
+		if self.quality == "ultrafast":
+			self.builder.get_object("combo_preset_selector").set_active(0)
+		elif self.quality == "superfast":
+			self.builder.get_object("combo_preset_selector").set_active(1)
+		elif self.quality == "veryfast":
+			self.builder.get_object("combo_preset_selector").set_active(2)
+		elif self.quality == "faster":
+			self.builder.get_object("combo_preset_selector").set_active(3)
+		elif self.quality == "fast":
+			self.builder.get_object("combo_preset_selector").set_active(4)
+		elif self.quality == "medium":
+			self.builder.get_object("combo_preset_selector").set_active(5)
+		elif self.quality == "slow":
+			self.builder.get_object("combo_preset_selector").set_active(6)
+		elif self.quality == "slower":
+			self.builder.get_object("combo_preset_selector").set_active(7)
+		elif self.quality == "veryslow":
+			self.builder.get_object("combo_preset_selector").set_active(8)
+		
 		# Apply previous configs
 		self.on_button_apply_clicked(0)
 		
 		window.show_all()
+		
+		# If watermarking is disabled, hide the watermarking options
+		if self.watermark == False:
+			self.builder.get_object("box_watermarkfile").hide()
 
+# All the getters, one for each value
 	def get_inres(self):
 		return self.inres
 
@@ -297,7 +344,13 @@ class Settings:
 	def get_watermark(self):
 		return self.watermark
 	
-	def on_combo_service_selector_changed(self, window):
+	def on_combo_preset_selector_changed(self, widget):
+		model = self.builder.get_object("combo_preset_selector").get_model()
+		active = self.builder.get_object("combo_preset_selector").get_active()
+		if active >= 0:
+			self.quality = model[active][0]
+	
+	def on_combo_service_selector_changed(self, widget):
 		model = self.builder.get_object("combo_service_selector").get_model()
 		active = self.builder.get_object("combo_service_selector").get_active()
 		if active >= 0:
@@ -321,7 +374,6 @@ class Settings:
 		self.x_offset = self.builder.get_object("entry_xoffset").get_text()
 		self.y_offset = self.builder.get_object("entry_yoffset").get_text()
 		self.fps = self.builder.get_object("entry_fps").get_text()
-		self.quality = self.builder.get_object("entry_quality").get_text()
 		self.bitrate = self.builder.get_object("entry_bitrate").get_text()
 		self.threads = self.builder.get_object("entry_threads").get_text()
 		self.show_region = self.builder.get_object("entry_region").get_text()

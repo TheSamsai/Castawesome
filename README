@@ -40,7 +40,7 @@ Installation and usage:
 	1. 	Download the tar.gz package of Castawesome and extract it into
 		a folder on your system.
 	2.	Verify that you have installed Python 2, GTK-3 libraries and
-		libav-tools. (Dependencies are listed in DEPENDS file)
+		libav-tools/ffmpeg. (Dependencies are listed in DEPENDS file)
 	3.	Run "make" in the folder you extracted Castawesome files into,
 		to verify you have all the necessary GTK libraries installed.
 		If the test is succesful, you will see "Castawesome is ok" in the
@@ -71,9 +71,11 @@ Installation and usage:
 			How many frames you want to send per second.
 			Keep in mind that higher frame rates will consume more
 			processing power and network bandwidth.
-		Quality:
-			Generic setting for the stream quality. You can usually
-			leave it "medium" or "fast".
+		Compression:
+			A compression preset. Faster options will compress the stream
+			less, making delays shorter and using less processing power,
+			but make the stream require more bandwidth. Slower presets
+			have an opposite effect.
 		Bitrate:
 			More specific setting for the stream quality. Higher
 			bitrate makes the stream in less blurry, but also consumes
@@ -88,6 +90,23 @@ Installation and usage:
 			area you are currently capturing. This helps to position and
 			resize windows to fit the stream. The setting can be either
 			1 (on) or 0 (off).
+		Enable Watermarking:
+			Enables a transparent image overlay, that will be shown in
+			the stream. CAUTION: Watermarking requires more processing
+			power than streams without it. Your stream may have more
+			frequent framedrops and lower framerates.
+		Watermark:
+			Allows you to pick a PNG image to be used as your watermark.
+			CAUTION: The resolution of the watermark must be less than
+			or equal to the output resolution of your stream!
+		Reset Stream Key:
+			Allows you to change the stream key.
+		Service Selector:
+			Service selector is a drop-down menu on the bottom of the
+			settings dialog that allows you to switch between multiple
+			livestream providers (Twitch.tv, Hitbox.tv and YouTube).
+			REMEMBER: You will have to re-enter your stream key every 
+			time you change your service. 
 		
 	8.	Click the toggle button to start the stream.
 	

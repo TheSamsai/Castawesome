@@ -1,4 +1,4 @@
-libav-tools
-libavcodec-extra-53
+libav-tools or ffmpeg
+libavcodec-extra-53 or similar ffmpeg package
 libgtk-3-0
 python2

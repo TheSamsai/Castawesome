@@ -1,4 +1,4 @@
-version=0.14.5-unstable
+version=0.14.5
 avconv_exists := $(shell which avconv)
 ffmpeg_exists := $(shell which ffmpeg)
 
@@ -42,7 +42,7 @@ use_ffmpeg:
 
 package:
 	rm -rf castawesome*.tar.gz castawesome/
-	rsync -av --progress ./ castawesome --exclude castawesome
+	rsync -av --progress ./ castawesome --exclude castawesome --exclude .git
 	tar zczf castawesome-$(version).tar.gz castawesome
 
 clean:
