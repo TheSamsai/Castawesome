@@ -100,13 +100,14 @@ class GUI:
 		"service" : self.settings.get_service(), "watermark" : '-vf "movie=%(watermark_file)s [watermark]; [in][watermark] overlay=0:0 [out]"' % {"watermark_file" : self.settings.get_watermark_file()}
 		}
 		
-		parameters["keyint"] = str(int(parameters["fps"] * 2))
+		parameters["keyint"] = str(int(parameters["fps"]) * 2)
+		print parameters["keyint"]
 		
 		if self.settings.get_watermark():
 			parameters["threads"] = str(int(parameters["threads"]) - 2)
-			command = str('ffmpeg -f x11grab -show_region %(show_region)s -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f alsa -ac 1 -i pulse -vcodec libx264 -s %(outres)s -preset %(quality)s -g %(keyint)s -minrate %(bitrate)s -maxrate %(bitrate)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -bufsize %(bitrate)s -pix_fmt yuv420p -f flv - | ffmpeg -i - -s %(outres)s -threads %(threads)s -preset %(quality)s -vcodec libx264 -acodec libmp3lame -ar 44100 -b %(bitrate)s %(watermark)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
+			command = str('ffmpeg -f x11grab -show_region %(show_region)s -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f alsa -ac 1 -i pulse -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -bufsize %(bitrate)s -pix_fmt yuv420p -f flv - | ffmpeg -i - -s %(outres)s -threads %(threads)s -preset %(quality)s -vcodec libx264 -acodec libmp3lame -ar 44100 -b %(bitrate)s -g %(keyint)s -minrate %(bitrate)s -maxrate %(bitrate)s %(watermark)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
 		else:
-			command = str('ffmpeg -f x11grab -show_region %(show_region)s -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f alsa -ac 1 -i pulse -vcodec libx264 -s %(outres)s -preset %(quality)s -g %(keyint)s -minrate %(bitrate)s -maxrate %(bitrate)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b %(bitrate)s -minrate %(bitrate)s -maxrate %(bitrate)s -bufsize 512k -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
+			command = str('ffmpeg -f x11grab -show_region %(show_region)s -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f alsa -ac 1 -i pulse -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b %(bitrate)s -g %(keyint)s -minrate %(bitrate)s -maxrate %(bitrate)s -bufsize %(bitrate)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
 		print command
 		# Start a subprocess to handle ffmpeg
 		self.process = subprocess.Popen(command, shell=True)
