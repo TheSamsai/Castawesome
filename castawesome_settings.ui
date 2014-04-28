@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <!-- interface-requires gtk+ 3.0 -->
-  <object class="GtkToggleAction" id="toggle_watermarking">
-    <signal name="toggled" handler="on_toggle_watermarking_toggled" swapped="no"/>
-  </object>
   <object class="GtkFileFilter" id="filefilter_watermark">
     <patterns>
       <pattern>*.png</pattern>
@@ -24,6 +21,9 @@
       <!-- column-name legible -->
       <column type="gchararray"/>
     </columns>
+  </object>
+  <object class="GtkToggleAction" id="toggle_watermarking">
+    <signal name="toggled" handler="on_toggle_watermarking_toggled" swapped="no"/>
   </object>
   <object class="GtkWindow" id="settings">
     <property name="can_focus">False</property>
@@ -409,14 +409,45 @@
           </packing>
         </child>
         <child>
-          <object class="GtkBox" id="box_watermarkfile">
+          <placeholder/>
+        </child>
+        <child>
+          <object class="GtkBox" id="box_watermarking">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="orientation">vertical</property>
             <child>
-              <object class="GtkLabel" id="label_watermark">
+              <object class="GtkBox" id="box_watermarkfile">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Watermark: </property>
+                <child>
+                  <object class="GtkLabel" id="label_watermark">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Watermark: </property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkFileChooserButton" id="filechooserbutton_watermark">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="orientation">vertical</property>
+                    <property name="filter">filefilter_watermark</property>
+                    <property name="title" translatable="yes">Choose a file</property>
+                    <signal name="file-set" handler="on_filechooserbutton_watermark_file_set" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="pack_type">end</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -425,18 +456,38 @@
               </packing>
             </child>
             <child>
-              <object class="GtkFileChooserButton" id="filechooserbutton_watermark">
+              <object class="GtkBox" id="box13">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="orientation">vertical</property>
-                <property name="filter">filefilter_watermark</property>
-                <property name="title" translatable="yes">Choose a file</property>
-                <signal name="file-set" handler="on_filechooserbutton_watermark_file_set" swapped="no"/>
+                <child>
+                  <object class="GtkLabel" id="label11">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Watermark Threads:</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkEntry" id="entry_watermark_threads">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="invisible_char">•</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="pack_type">end</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
               </object>
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="pack_type">end</property>
                 <property name="position">1</property>
               </packing>
             </child>
@@ -444,7 +495,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">10</property>
+            <property name="position">11</property>
           </packing>
         </child>
         <child>
@@ -491,7 +542,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">11</property>
+            <property name="position">12</property>
           </packing>
         </child>
         <child>
@@ -511,7 +562,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">12</property>
+            <property name="position">13</property>
           </packing>
         </child>
       </object>

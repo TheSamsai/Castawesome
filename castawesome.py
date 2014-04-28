@@ -74,7 +74,7 @@ class GUI:
 			# Kill the subprocess and end the stream
 			subprocess.call("ps -ef | awk '$3 == \"" + str(self.process.pid) + "\" {print $2}' | xargs kill -9", shell=True)
 			self.process.kill()
-			#os.system("pkill ffmpeg")
+			#os.system("pkill avconv")
 		else:
 			self.stream()
 		self.streaming = not self.streaming
@@ -91,25 +91,26 @@ class GUI:
 		fob.close()
 		
 		# Setting up audio channels for audio input
-		# self.audiochannels = "-f alsa -ac 2 -i pulse"1280x720
 		
 		# Avconv is supplied with user's settings and executed
 		parameters = {"inres" : self.settings.get_inres(), "outres" : self.settings.get_outres(), "x_offset" : self.settings.get_x_offset(),
 		"y_offset" : self.settings.get_y_offset(), "fps" : self.settings.get_fps(), "quality" : self.settings.get_quality(),
-		"bitrate" : self.settings.get_bitrate(), "threads" : self.settings.get_threads(), "show_region" : self.settings.get_show_region(),
-		"service" : self.settings.get_service(), "watermark" : '-vf "movie=%(watermark_file)s [watermark]; [in][watermark] overlay=0:0 [out]"' % {"watermark_file" : self.settings.get_watermark_file()}
+		"bitrate" : self.settings.get_bitrate(), "threads" : self.settings.get_threads(), "watermark_threads" : self.settings.get_watermark_threads(), "show_region" : self.settings.get_show_region(),
+		"service" : self.settings.get_service(), "watermark" : '-vf "movie=%(watermark_file)s [watermark]; [in][watermark] overlay=0:0 [out]"' % {"watermark_file" : self.settings.get_watermark_file()},
+		"watermark_file" : self.settings.get_watermark_file()
 		}
 		
 		parameters["keyint"] = str(int(parameters["fps"]) * 2)
 		print parameters["keyint"]
 		
 		if self.settings.get_watermark():
-			parameters["threads"] = str(int(parameters["threads"]) - 2)
-			command = str('ffmpeg -f x11grab -show_region %(show_region)s -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f alsa -ac 1 -i pulse -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -bufsize %(bitrate)s -pix_fmt yuv420p -f flv - | ffmpeg -i - -s %(outres)s -threads %(threads)s -preset %(quality)s -vcodec libx264 -acodec libmp3lame -ar 44100 -b %(bitrate)s -g %(keyint)s -minrate %(bitrate)s -maxrate %(bitrate)s %(watermark)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
+			#command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f pulse -ac 1 -i default -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -bufsize %(bitrate)s -pix_fmt yuv420p -f flv - | avconv -i - -s %(outres)s -threads %(watermark_threads)s -preset %(quality)s -vcodec libx264 -acodec libmp3lame -ar 44100 -b:v %(bitrate)s -b:a 128k -g %(keyint)s -minrate %(bitrate)s -maxrate %(bitrate)s %(watermark)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
+			# Look at this awesomeness! LOOK AT IT!
+			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -i %(watermark_file)s -f pulse -ac 1 -i default -vcodec libx264 -filter_complex '+ "'overlay=0:main_h-overlay_h-0'" + ' -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b:a 128k -b:v %(bitrate)s -maxrate %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -bufsize %(bitrate)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
 		else:
-			command = str('ffmpeg -f x11grab -show_region %(show_region)s -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f alsa -ac 1 -i pulse -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b %(bitrate)s -g %(keyint)s -minrate %(bitrate)s -maxrate %(bitrate)s -bufsize %(bitrate)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
+			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f pulse -ac 1 -i default -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b:a 128k -b:v %(bitrate)s -maxrate %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -bufsize %(bitrate)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
 		print command
-		# Start a subprocess to handle ffmpeg
+		# Start a subprocess to handle avconv
 		self.process = subprocess.Popen(command, shell=True)
 		#os.system(command + " &")
 		
@@ -147,6 +148,7 @@ class Settings:
 	threads = ""			# Amount of threads
 	watermark = ""			# Enable/Disable watermarking
 	watermark_file = ""		# Filename of the watermark
+	watermark_threads = ""	# Threads used for the watermarking
 	service = ""			# The streaming service in use
 
 	def __init__(self):
@@ -166,6 +168,7 @@ class Settings:
 	"quality": "medium",\n
 	"bitrate": "400k",\n
 	"threads": "1",\n
+	"watermark_threads" : "1",\n
 	"show_region": "1",\n
 	"service": "rtmp://live.twitch.tv/app/"\n
 }""")
@@ -208,7 +211,11 @@ class Settings:
 					self.watermark = False
 				else:
 					self.watermark = True
-				self.watermark_file = lines["watermark_file"]
+				try:
+					self.watermark_file = lines["watermark_file"]
+					self.watermark_threads = lines["watermark_threads"]
+				except:
+					self.watermark_threads = ""
 				
 		except:
 			print "An error occured: " + str(sys.exc_info())
@@ -232,6 +239,7 @@ class Settings:
 		self.builder.get_object("entry_bitrate").set_text(self.bitrate)
 		self.builder.get_object("entry_threads").set_text(self.threads)
 		self.builder.get_object("entry_region").set_text(self.show_region)
+		self.builder.get_object("entry_watermark_threads").set_text(self.watermark_threads)
 		
 		# If watermarking has been enabled, set the filenames and switches
 		if self.watermark:
@@ -303,7 +311,7 @@ class Settings:
 		
 		# If watermarking is disabled, hide the watermarking options
 		if self.watermark == False:
-			self.builder.get_object("box_watermarkfile").hide()
+			self.builder.get_object("box_watermarking").hide()
 
 # All the getters, one for each value
 	def get_inres(self):
@@ -329,6 +337,9 @@ class Settings:
 
 	def get_threads(self):
 		return self.threads
+	
+	def get_watermark_threads(self):
+		return self.watermark_threads
 
 	def get_show_region(self):
 		return self.show_region
@@ -364,9 +375,9 @@ class Settings:
 		self.watermark = widget.get_active()
 		
 		if self.watermark:
-			self.builder.get_object("box_watermarkfile").show()
+			self.builder.get_object("box_watermarking").show()
 		else:
-			self.builder.get_object("box_watermarkfile").hide()
+			self.builder.get_object("box_watermarking").hide()
 		print self.watermark
 	
 	def on_button_apply_clicked(self, window):
@@ -377,6 +388,7 @@ class Settings:
 		self.fps = self.builder.get_object("entry_fps").get_text()
 		self.bitrate = self.builder.get_object("entry_bitrate").get_text()
 		self.threads = self.builder.get_object("entry_threads").get_text()
+		self.watermark_threads = self.builder.get_object("entry_watermark_threads").get_text()
 		self.show_region = self.builder.get_object("entry_region").get_text()
 
 		# Save configs in homefolder
@@ -384,9 +396,9 @@ class Settings:
 		# We will use dictionary based formatting expressions
 		d = {"inres" : self.inres, "outres" : self.outres, "x_offset" : self.x_offset,
 		"y_offset" : self.y_offset, "fps" : self.fps, "quality" : self.quality,
-		"bitrate" : self.bitrate, "threads" : self.threads, "show_region" : self.show_region,
-		"use_watermark" : str(self.watermark), "watermark_file" : self.watermark_file,
-		"service" : self.service
+		"bitrate" : self.bitrate, "threads" : self.threads, "watermark_threads" : self.watermark_threads,
+		"show_region" : self.show_region, "use_watermark" : str(self.watermark), 
+		"watermark_file" : self.watermark_file, "service" : self.service
 		}
 		
 		fob.write("""{
@@ -398,6 +410,7 @@ class Settings:
 	"quality": "%(quality)s",
 	"bitrate": "%(bitrate)s",
 	"threads": "%(threads)s",
+	"watermark_threads": "%(watermark_threads)s",
 	"show_region": "%(show_region)s",
 	"use_watermark" : "%(use_watermark)s",
 	"watermark_file" : "%(watermark_file)s",
