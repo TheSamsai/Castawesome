@@ -1,3 +1,30 @@
+	#29.05.2014
+Version 0.14.7 is out!
+
+After looking further into FFmpeg's features I found out that watermarking
+doesn't require using two processes and a feature called filter_complex
+allows creation of watermarks with reduced CPU usage. I have switched
+Castawesome to use that and abandoned our own dirty technique.
+
+So far this has shown increased framerates and reduced resource usage
+across the board, so it's party time!
+
+As I am now talking about the awesome stuff in FFmpeg, I would also like
+to highlight some issues. First of all, I have received reports that
+livestreams have desynchronized audio. Sadly, this is an issue I won't
+be able to fix. Audio desyncs have been the Issue #1 with Castawesome
+since the dawn of the project and the reason is our use of FFmpeg for
+the backend. FFmpeg doesn't handle audio input from ALSA/Pulseaudio
+properly and offers no way to drop or include samples to balance it.
+
+As long as we use FFmpeg/avconv to encode and send the AV data we will
+see desyncs. I can only hope that either LibAV or FFmpeg decides to fix
+this or people don't encounter the issue, as I am incapable of fixing
+these issues myself. This also means that, while we are approaching
+version 0.99, I will never release version 1.0 of Castawesome, unless
+we figure out another way to do our backend OR the projects provide us
+with fixes.
+
 	#06.04.2014
 Release notes for 0.14.5
 
