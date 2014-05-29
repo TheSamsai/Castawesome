@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.16.1 -->
 <interface>
-  <!-- interface-requires gtk+ 3.0 -->
+  <requires lib="gtk+" version="3.0"/>
   <object class="GtkFileFilter" id="filefilter_watermark">
     <patterns>
       <pattern>*.png</pattern>
@@ -56,7 +57,6 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="invisible_char">●</property>
-                <property name="invisible_char_set">True</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -93,7 +93,6 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="invisible_char">●</property>
-                <property name="invisible_char_set">True</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -202,7 +201,6 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="invisible_char">●</property>
-                <property name="invisible_char_set">True</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -279,7 +277,6 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="invisible_char">●</property>
-                <property name="invisible_char_set">True</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -316,7 +313,6 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="invisible_char">●</property>
-                <property name="invisible_char_set">True</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -353,7 +349,6 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="invisible_char">●</property>
-                <property name="invisible_char_set">True</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -391,8 +386,6 @@
                 <property name="related_action">toggle_watermarking</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="related_action">toggle_watermarking</property>
-                <property name="use_action_appearance">False</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -436,7 +429,6 @@
                   <object class="GtkFileChooserButton" id="filechooserbutton_watermark">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="orientation">vertical</property>
                     <property name="filter">filefilter_watermark</property>
                     <property name="title" translatable="yes">Choose a file</property>
                     <signal name="file-set" handler="on_filechooserbutton_watermark_file_set" swapped="no"/>
@@ -460,29 +452,10 @@
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <child>
-                  <object class="GtkLabel" id="label11">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Watermark Threads:</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
-                  </packing>
+                  <placeholder/>
                 </child>
                 <child>
-                  <object class="GtkEntry" id="entry_watermark_threads">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="invisible_char">•</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="pack_type">end</property>
-                    <property name="position">1</property>
-                  </packing>
+                  <placeholder/>
                 </child>
               </object>
               <packing>
@@ -509,7 +482,6 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <property name="use_action_appearance">False</property>
                 <signal name="clicked" handler="on_button_reset_streamkey_clicked" swapped="no"/>
               </object>
               <packing>
@@ -528,7 +500,6 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <property name="use_action_appearance">False</property>
                 <property name="use_stock">True</property>
                 <signal name="clicked" handler="on_button_apply_clicked" swapped="no"/>
               </object>
