@@ -1,3 +1,44 @@
+	# Inset date here
+Release notes for version 0.15
+
+This might be the last time I'll be writing these release notes for a
+long time, possibly even the last one ever to be written by me for
+this project.
+
+The reason for this is the fact that this is the Castawesome version
+0.15 and it will be the final patch for Castawesome (excluding possible
+hotfixes). No more features will be added, unless a fix for Castawesome
+bug number #1 is found. As you may know, the bug #1 is the desynced audio,
+caused by either bugs in Pulseaudio/ALSA or FFmpeg/avconv.
+
+I feel that it's pointless to improve the feature set of a program that
+is inherently broken with no fixes in sight. It's sad to say goodbye
+to a project you've been working on for a long time, but there always
+comes a time to let go. Castawesome has been superceded by more advanced
+pieces of software, mainly SimpleScreenRecorder and Open Broadcaster
+Software.
+
+Because this is probably the last feature update, I decided to make it
+a good one. We have a lot of things to cover, so let's begin.
+
+- Added ability to use a 3rd party services that are not on the list
+- Added Picarto.tv as an officially supported service
+- Show Capture Region is now a switch and not a text entry
+- Design of Settings Dialog has been improved a bit
+- Added webcam support and a dialog to place the webcam overlay
+
+As you can see, we have a lot of new things to play with. But do consider
+making the switch to a more advanced and less dead project. My personal
+favourite is SimpleScreenRecorder. It's a very reliable tool and it
+should cover your basic livestreaming and recording needs. Open Broadcaster
+Software is also a good candidate, though at the moment it might be a bit
+unstable.
+
+That's all for me folks, hopefully you have enjoyed using Castawesome,
+for I have enjoyed making it.
+
+------------------------------------------------------------------------
+	
 	#29.05.2014
 Version 0.14.7 is out!
 
@@ -24,6 +65,8 @@ these issues myself. This also means that, while we are approaching
 version 0.99, I will never release version 1.0 of Castawesome, unless
 we figure out another way to do our backend OR the projects provide us
 with fixes.
+
+------------------------------------------------------------------------
 
 	#06.04.2014
 Release notes for 0.14.5

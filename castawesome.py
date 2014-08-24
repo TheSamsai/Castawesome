@@ -35,6 +35,8 @@ STREAMKEY_UI_FILE1 = "castawesome_streamkey.ui"
 STREAMKEY_UI_FILE2 = "/usr/local/share/castawesome/ui/castawesome_streamkey.ui"
 ABOUT_UI_FILE1 = "castawesome_about.ui"
 ABOUT_UI_FILE2 = "/usr/local/share/castawesome/ui/castawesome_about.ui"
+CUSTOM_UI_FILE1 = "castawesome_custom.ui"
+CUSTOM_UI_FILE2 = "/usr/local/share/castawesome/ui/castawesome_custom.ui"
 
 # A "hack" to get path to user's home folder
 home = os.path.expanduser("~")
@@ -89,12 +91,16 @@ class GUI:
 		twitch_key = fob.read().strip()
 		fob.close()
 		
-		# Setting up audio channels for audio input
+		# Decide whether to enable visible screen regions
+		if self.settings.get_show_region():
+			show_region = "1"
+		else:
+			show_region = "0"
 		
 		# Avconv is supplied with user's settings and executed
 		parameters = {"inres" : self.settings.get_inres(), "outres" : self.settings.get_outres(), "x_offset" : self.settings.get_x_offset(),
 		"y_offset" : self.settings.get_y_offset(), "fps" : self.settings.get_fps(), "quality" : self.settings.get_quality(),
-		"bitrate" : self.settings.get_bitrate(), "threads" : self.settings.get_threads(), "show_region" : self.settings.get_show_region(),
+		"bitrate" : self.settings.get_bitrate(), "threads" : self.settings.get_threads(), "show_region" : show_region,
 		"service" : self.settings.get_service(), "watermark" : '-vf "movie=%(watermark_file)s [watermark]; [in][watermark] overlay=0:0 [out]"' % {"watermark_file" : self.settings.get_watermark_file()},
 		"watermark_file" : self.settings.get_watermark_file()
 		}
@@ -145,6 +151,7 @@ class Settings:
 	quality = ""			# Quality (medium, fast, etc.)
 	bitrate = ""			# Bitrate (+300k usually is fine)
 	threads = ""			# Amount of threads
+	show_region = ""		# Show or don't show capture region
 	watermark = ""			# Enable/Disable watermarking
 	watermark_file = ""		# Filename of the watermark
 	service = ""			# The streaming service in use
@@ -199,11 +206,14 @@ class Settings:
 				self.quality = lines["quality"]
 				self.bitrate = lines["bitrate"]
 				self.threads = lines["threads"]
-				self.show_region = lines["show_region"]
+				if lines["show_region"] == "False":
+					self.show_region = False
+				else:
+					self.show_region = True
 				try:
 					self.service = lines["service"]
 				except:
-					self.service = "rtmp://live.twitch.tv/app/"
+					self.service = "none"
 				if lines["use_watermark"] == "False":
 					self.watermark = False
 				else:
@@ -234,7 +244,9 @@ class Settings:
 		self.builder.get_object("entry_fps").set_text(self.fps)
 		self.builder.get_object("entry_bitrate").set_text(self.bitrate)
 		self.builder.get_object("entry_threads").set_text(self.threads)
-		self.builder.get_object("entry_region").set_text(self.show_region)
+		
+		# Set the capture_region switch to the correct state
+		self.builder.get_object("switch_capture_region").set_active(self.show_region)
 		
 		# If watermarking has been enabled, set the filenames and switches
 		if self.watermark:
@@ -246,6 +258,8 @@ class Settings:
 			['rtmp://live.twitch.tv/app/', 'Twitch.tv'],
 			['rtmp://a.rtmp.youtube.com/live2/', 'YouTube'],
 			['rtmp://live.hitbox.tv/push/', 'Hitbox.tv'],
+			['rtmp://live.us.picarto.tv/golive/', "Picarto.tv"],
+			["none", "Custom"]
 		]
 		
 		presets = [
@@ -278,6 +292,10 @@ class Settings:
 			self.builder.get_object("combo_service_selector").set_active(1)
 		elif self.service == 'rtmp://live.hitbox.tv/push/':
 			self.builder.get_object("combo_service_selector").set_active(2)
+		elif self.service == 'rtmp://live.us.picarto.tv/golive/':
+			self.builder.get_object("combo_service_selector").set_active(3)
+		else:
+			self.builder.get_object("combo_service_selector").set_active(4)
 		
 		# Do the same to quality (compression) presets
 		if self.quality == "ultrafast":
@@ -357,11 +375,17 @@ class Settings:
 	def on_combo_service_selector_changed(self, widget):
 		model = self.builder.get_object("combo_service_selector").get_model()
 		active = self.builder.get_object("combo_service_selector").get_active()
-		if active >= 0:
+		if active >= 0 and active != 4:
 			self.service = model[active][0]
+		print self.service
 	
 	def on_filechooserbutton_watermark_file_set(self, widget):
 		self.watermark_file = widget.get_filename()
+	
+	def on_toggle_capture_region_toggled(self, widget):
+		self.show_region = widget.get_active()
+		
+		print self.show_region
 	
 	def on_toggle_watermarking_toggled(self, widget):
 		self.watermark = widget.get_active()
@@ -380,7 +404,6 @@ class Settings:
 		self.fps = self.builder.get_object("entry_fps").get_text()
 		self.bitrate = self.builder.get_object("entry_bitrate").get_text()
 		self.threads = self.builder.get_object("entry_threads").get_text()
-		self.show_region = self.builder.get_object("entry_region").get_text()
 
 		# Save configs in homefolder
 		fob = open(os.path.join(home, ".config/castawesome/config.txt"), "w")
@@ -388,7 +411,7 @@ class Settings:
 		d = {"inres" : self.inres, "outres" : self.outres, "x_offset" : self.x_offset,
 		"y_offset" : self.y_offset, "fps" : self.fps, "quality" : self.quality,
 		"bitrate" : self.bitrate, "threads" : self.threads,
-		"show_region" : self.show_region, "use_watermark" : str(self.watermark), 
+		"show_region" : str(self.show_region), "use_watermark" : str(self.watermark), 
 		"watermark_file" : self.watermark_file, "service" : self.service
 		}
 		
@@ -408,6 +431,9 @@ class Settings:
 		
 		fob.close()
 		
+	def on_button_custom_service_clicked(self, window):
+		custom = CustomService(self)
+	
 	def on_button_reset_streamkey_clicked(self, window):
 		warning = StreamKey()
 	
@@ -436,6 +462,26 @@ class Settings:
 			self.show_region = lines[8].strip()
 		except IOError:
 			print "Couldn't load config files!"
+
+# Custom Service Setup
+class CustomService():
+	def __init__(self, parent):
+		self.parent = parent
+		self.builder = Gtk.Builder()
+		try:
+			self.builder.add_from_file(CUSTOM_UI_FILE1)
+			print "Loaded " + CUSTOM_UI_FILE1
+		except:
+			self.builder.add_from_file(CUSTOM_UI_FILE2)
+			print "Loaded " + CUSTOM_UI_FILE2
+		self.window = self.builder.get_object("custom_service")
+		self.builder.connect_signals(self)
+		self.window.show_all()
+		
+	def on_button_apply_custom_clicked(self, window):
+		self.parent.service = self.builder.get_object("entry_rtmp_url").get_text()
+		self.parent.builder.get_object("combo_service_selector").set_active(4)
+		self.window.destroy()
 
 # Stream key warning dialog
 class StreamKey():
@@ -466,8 +512,14 @@ class About():
 			self.builder.add_from_file(ABOUT_UI_FILE1)
 		except:
 			self.builder.add_from_file(ABOUT_UI_FILE2)
-		window = self.builder.get_object("about")
-		window.show_all()
+		try:
+			self.builder.add_from_file(ABOUT_UI_FILE1)
+			self.builder.get_object('image').set_from_file("CastA1.png")
+		except:
+			self.builder.add_from_file(ABOUT_UI_FILE2)
+			self.builder.get_object('image').set_from_file("/usr/local/share/castawesome/ui/CastA1.png")
+		self.window = self.builder.get_object("about")
+		self.window.show_all()
 
 # Program main function
 def main():
