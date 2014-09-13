@@ -37,6 +37,8 @@ ABOUT_UI_FILE1 = "castawesome_about.ui"
 ABOUT_UI_FILE2 = "/usr/local/share/castawesome/ui/castawesome_about.ui"
 CUSTOM_UI_FILE1 = "castawesome_custom.ui"
 CUSTOM_UI_FILE2 = "/usr/local/share/castawesome/ui/castawesome_custom.ui"
+WEBCAM_UI_FILE1 = "castawesome_webcam.ui"
+WEBCAM_UI_FILE2 = "/usr/local/share/castawesome/ui/castawesome_webcam.ui"
 
 # A "hack" to get path to user's home folder
 home = os.path.expanduser("~")
@@ -109,9 +111,10 @@ class GUI:
 		print parameters["keyint"]
 		
 		if self.settings.get_watermark():
-			#command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -r " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f pulse -ac 1 -i default -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -bufsize %(bitrate)s -pix_fmt yuv420p -f flv - | avconv -i - -s %(outres)s -threads %(watermark_threads)s -preset %(quality)s -vcodec libx264 -acodec libmp3lame -ar 44100 -b:v %(bitrate)s -b:a 128k -g %(keyint)s -minrate %(bitrate)s -maxrate %(bitrate)s %(watermark)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
 			# Look at this awesomeness! LOOK AT IT!
 			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -i %(watermark_file)s -f pulse -ac 1 -i default -vcodec libx264 -filter_complex '+ "'overlay=0:main_h-overlay_h-0'" + ' -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b:a 128k -b:v %(bitrate)s -maxrate %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -bufsize %(bitrate)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
+		elif self.settings.get_webcam():
+			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -i -i /dev/video0 -f pulse -ac 1 -i default -vcodec libx264 -filter_complex '+ "'overlay=0:main_h-overlay_h-0'" + ' -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b:a 128k -b:v %(bitrate)s -maxrate %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -bufsize %(bitrate)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
 		else:
 			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f pulse -ac 1 -i default -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b:a 128k -b:v %(bitrate)s -maxrate %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -bufsize %(bitrate)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
 		print command
@@ -154,6 +157,7 @@ class Settings:
 	show_region = ""		# Show or don't show capture region
 	watermark = ""			# Enable/Disable watermarking
 	watermark_file = ""		# Filename of the watermark
+	webcam = ""				# Enable/Disable webcam
 	service = ""			# The streaming service in use
 
 	def __init__(self):
@@ -228,12 +232,11 @@ class Settings:
 			print "Couldn't load config files!"
 			
 		self.builder = Gtk.Builder()
-		try:
-			self.builder.add_from_file(SETUP_UI_FILE1)
-			print "Loaded " + SETUP_UI_FILE1
-		except:
+		self.builder.add_from_file(SETUP_UI_FILE1)
+		print "Loaded " + SETUP_UI_FILE1
+		"""except:
 			self.builder.add_from_file(SETUP_UI_FILE2)
-			print "Loaded " + SETUP_UI_FILE2
+			print "Loaded " + SETUP_UI_FILE2"""
 		self.builder.connect_signals(self)
 
 		window = self.builder.get_object("settings")
@@ -362,7 +365,10 @@ class Settings:
 		
 	def get_watermark_file(self):
 		return self.watermark_file
-		
+	
+	def get_webcam(self):
+		return self.watermark
+	
 	def get_service(self):
 		return self.service
 	
@@ -389,6 +395,16 @@ class Settings:
 		self.show_region = widget.get_active()
 		
 		print self.show_region
+		
+	def on_toggle_webcam_toggled(self, widget):
+		self.webcam = widget.get_active()
+		
+		if self.webcam:
+			self.builder.get_object("box_webcam").show()
+		else:
+			self.builder.get_object("box_webcam").hide()
+		
+		print self.webcam
 	
 	def on_toggle_watermarking_toggled(self, widget):
 		self.watermark = widget.get_active()
@@ -439,6 +455,9 @@ class Settings:
 	
 	def on_button_reset_streamkey_clicked(self, window):
 		warning = StreamKey()
+	
+	def on_button_configure_webcam_clicked(self, window):
+		webcam = WebcamConfig()
 	
 	# Function to make the program backwards compatible with the old config files
 	def load_legacy_config(self):
@@ -507,14 +526,117 @@ class StreamKey():
 		
 		self.window.destroy()
 
+# Webcam config
+class WebcamConfig():
+	def __init__(self):
+		self.builder = Gtk.Builder()
+		try:
+			self.builder.add_from_file(WEBCAM_UI_FILE1)
+		except:
+			self.builder.add_from_file(WEBCAM_UI_FILE2)
+		self.window = self.builder.get_object("webcam")
+		self.builder.connect_signals(self)
+		self.window.show_all()
+	
+	# A bunch of toggleaction toggle event handlers
+	def on_toggleaction_leftop_toggled(self, sender):
+		print "Hello World!"
+		if sender.get_active():
+			self.builder.get_object("togglebutton_lefmid").set_active(False)
+			self.builder.get_object("togglebutton_lefbot").set_active(False)
+			self.builder.get_object("togglebutton_midtop").set_active(False)
+			self.builder.get_object("togglebutton_midmid").set_active(False)
+			self.builder.get_object("togglebutton_midbot").set_active(False)
+			self.builder.get_object("togglebutton_rigtop").set_active(False)
+			self.builder.get_object("togglebutton_rigmid").set_active(False)
+			self.builder.get_object("togglebutton_rigbot").set_active(False)
+	def on_toggleaction_lefmid_toggled(self, sender):
+		if sender.get_active():
+			self.builder.get_object("togglebutton_leftop").set_active(False)
+			self.builder.get_object("togglebutton_lefbot").set_active(False)
+			self.builder.get_object("togglebutton_midtop").set_active(False)
+			self.builder.get_object("togglebutton_midmid").set_active(False)
+			self.builder.get_object("togglebutton_midbot").set_active(False)
+			self.builder.get_object("togglebutton_rigtop").set_active(False)
+			self.builder.get_object("togglebutton_rigmid").set_active(False)
+			self.builder.get_object("togglebutton_rigbot").set_active(False)
+	def on_toggleaction_lefbot_toggled(self, sender):
+		if sender.get_active():
+			self.builder.get_object("togglebutton_leftop").set_active(False)
+			self.builder.get_object("togglebutton_lefmid").set_active(False)
+			self.builder.get_object("togglebutton_midtop").set_active(False)
+			self.builder.get_object("togglebutton_midmid").set_active(False)
+			self.builder.get_object("togglebutton_midbot").set_active(False)
+			self.builder.get_object("togglebutton_rigtop").set_active(False)
+			self.builder.get_object("togglebutton_rigmid").set_active(False)
+			self.builder.get_object("togglebutton_rigbot").set_active(False)
+		
+	def on_toggleaction_midtop_toggled(self, sender):
+		if sender.get_active():
+			self.builder.get_object("togglebutton_leftop").set_active(False)
+			self.builder.get_object("togglebutton_lefmid").set_active(False)
+			self.builder.get_object("togglebutton_lefbot").set_active(False)
+			self.builder.get_object("togglebutton_midmid").set_active(False)
+			self.builder.get_object("togglebutton_midbot").set_active(False)
+			self.builder.get_object("togglebutton_rigtop").set_active(False)
+			self.builder.get_object("togglebutton_rigmid").set_active(False)
+			self.builder.get_object("togglebutton_rigbot").set_active(False)
+	def on_toggleaction_midmid_toggled(self, sender):
+		if sender.get_active():
+			self.builder.get_object("togglebutton_leftop").set_active(False)
+			self.builder.get_object("togglebutton_lefmid").set_active(False)
+			self.builder.get_object("togglebutton_leftop").set_active(False)
+			self.builder.get_object("togglebutton_midtop").set_active(False)
+			self.builder.get_object("togglebutton_midbot").set_active(False)
+			self.builder.get_object("togglebutton_rigtop").set_active(False)
+			self.builder.get_object("togglebutton_rigmid").set_active(False)
+			self.builder.get_object("togglebutton_rigbot").set_active(False)
+	def on_toggleaction_midbot_toggled(self, sender):
+		if sender.get_active():
+			self.builder.get_object("togglebutton_leftop").set_active(False)
+			self.builder.get_object("togglebutton_lefmid").set_active(False)
+			self.builder.get_object("togglebutton_lefbot").set_active(False)
+			self.builder.get_object("togglebutton_midtop").set_active(False)
+			self.builder.get_object("togglebutton_midmid").set_active(False)
+			self.builder.get_object("togglebutton_rigtop").set_active(False)
+			self.builder.get_object("togglebutton_rigmid").set_active(False)
+			self.builder.get_object("togglebutton_rigbot").set_active(False)
+		
+	def on_toggleaction_rigtop_toggled(self, sender):
+		if sender.get_active():
+			self.builder.get_object("togglebutton_leftop").set_active(False)
+			self.builder.get_object("togglebutton_lefmid").set_active(False)
+			self.builder.get_object("togglebutton_lefbot").set_active(False)
+			self.builder.get_object("togglebutton_midtop").set_active(False)
+			self.builder.get_object("togglebutton_midmid").set_active(False)
+			self.builder.get_object("togglebutton_midbot").set_active(False)
+			self.builder.get_object("togglebutton_rigmid").set_active(False)
+			self.builder.get_object("togglebutton_rigbot").set_active(False)
+	def on_toggleaction_rigmid_toggled(self, sender):
+		if sender.get_active():
+			self.builder.get_object("togglebutton_leftop").set_active(False)
+			self.builder.get_object("togglebutton_lefmid").set_active(False)
+			self.builder.get_object("togglebutton_lefbot").set_active(False)
+			self.builder.get_object("togglebutton_midtop").set_active(False)
+			self.builder.get_object("togglebutton_midmid").set_active(False)
+			self.builder.get_object("togglebutton_midbot").set_active(False)
+			self.builder.get_object("togglebutton_rigtop").set_active(False)
+			self.builder.get_object("togglebutton_rigbot").set_active(False)
+	def on_toggleaction_rigbot_toggled(self, sender):
+		if sender.get_active():
+			self.builder.get_object("togglebutton_leftop").set_active(False)
+			self.builder.get_object("togglebutton_lefmid").set_active(False)
+			self.builder.get_object("togglebutton_lefbot").set_active(False)
+			self.builder.get_object("togglebutton_midtop").set_active(False)
+			self.builder.get_object("togglebutton_midmid").set_active(False)
+			self.builder.get_object("togglebutton_midbot").set_active(False)
+			self.builder.get_object("togglebutton_rigtop").set_active(False)
+			self.builder.get_object("togglebutton_rigmid").set_active(False)
+
 # About window
 class About():
 	def __init__(self):
 		self.builder = Gtk.Builder()
-		try:
-			self.builder.add_from_file(ABOUT_UI_FILE1)
-		except:
-			self.builder.add_from_file(ABOUT_UI_FILE2)
 		try:
 			self.builder.add_from_file(ABOUT_UI_FILE1)
 			self.builder.get_object('image').set_from_file("CastA1.png")

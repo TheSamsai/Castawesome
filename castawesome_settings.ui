@@ -23,11 +23,53 @@
       <column type="gchararray"/>
     </columns>
   </object>
+  <object class="GtkBox" id="box_services">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <child>
+      <object class="GtkComboBox" id="combo_service_selector">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="model">list_services</property>
+        <property name="button_sensitivity">on</property>
+        <signal name="changed" handler="on_combo_service_selector_changed" swapped="no"/>
+        <child>
+          <object class="GtkCellRendererText" id="renderer2"/>
+          <attributes>
+            <attribute name="text">1</attribute>
+          </attributes>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="position">0</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkButton" id="button_custom_service">
+        <property name="label" translatable="yes">Custom Service</property>
+        <property name="visible">True</property>
+        <property name="can_focus">True</property>
+        <property name="receives_default">True</property>
+        <signal name="clicked" handler="on_button_custom_service_clicked" swapped="no"/>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="pack_type">end</property>
+        <property name="position">1</property>
+      </packing>
+    </child>
+  </object>
   <object class="GtkToggleAction" id="toggle_capture_region">
     <signal name="toggled" handler="on_toggle_capture_region_toggled" swapped="no"/>
   </object>
   <object class="GtkToggleAction" id="toggle_watermarking">
     <signal name="toggled" handler="on_toggle_watermarking_toggled" swapped="no"/>
+  </object>
+  <object class="GtkToggleAction" id="toggle_webcam">
+    <signal name="toggled" handler="on_toggle_webcam_toggled" swapped="no"/>
   </object>
   <object class="GtkWindow" id="settings">
     <property name="can_focus">False</property>
@@ -451,23 +493,6 @@
                 <property name="position">0</property>
               </packing>
             </child>
-            <child>
-              <object class="GtkBox" id="box13">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -476,7 +501,69 @@
           </packing>
         </child>
         <child>
-          <placeholder/>
+          <object class="GtkBox" id="box_webcam_enable">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <child>
+              <object class="GtkLabel" id="label12">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">Enable Webcam:</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkSwitch" id="switch_enable_webcam">
+                <property name="related_action">toggle_webcam</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="pack_type">end</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">12</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkBox" id="box_webcam">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <object class="GtkButton" id="button_configure_webcam">
+                <property name="label" translatable="yes">Configure Webcam</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <signal name="clicked" handler="on_button_configure_webcam_clicked" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="pack_type">end</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">13</property>
+          </packing>
         </child>
         <child>
           <object class="GtkLabel" id="label11">
@@ -487,22 +574,22 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">False</property>
-            <property name="position">13</property>
+            <property name="position">14</property>
           </packing>
         </child>
         <child>
-          <object class="GtkBox" id="box_services">
+          <object class="GtkBox" id="box_services1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <child>
-              <object class="GtkComboBox" id="combo_service_selector">
+              <object class="GtkComboBox" id="combo_service_selector1">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="model">list_services</property>
                 <property name="button_sensitivity">on</property>
                 <signal name="changed" handler="on_combo_service_selector_changed" swapped="no"/>
                 <child>
-                  <object class="GtkCellRendererText" id="renderer2"/>
+                  <object class="GtkCellRendererText" id="renderer1"/>
                   <attributes>
                     <attribute name="text">1</attribute>
                   </attributes>
@@ -515,7 +602,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkButton" id="button_custom_service">
+              <object class="GtkButton" id="button_custom_service1">
                 <property name="label" translatable="yes">Custom Service</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
@@ -533,7 +620,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">14</property>
+            <property name="position">15</property>
           </packing>
         </child>
         <child>
@@ -578,7 +665,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">15</property>
+            <property name="position">16</property>
           </packing>
         </child>
       </object>
