@@ -20,12 +20,13 @@ endif
 install:
 	mkdir -p /usr/local/share/castawesome/ui
 	mkdir -p /usr/local/share/castawesome/doc
+	mkdir -p /usr/local/share/applications/
 	cp *.ui /usr/local/share/castawesome/ui
 	cp *.png /usr/local/share/castawesome/ui
 	cp README AUTHORS NEWS COPYING /usr/local/share/castawesome/doc
 	cp castawesome.py /usr/local/bin/castawesome
 	cp uninstall_castawesome.sh /usr/local/bin/uninstall_castawesome
-	cp Castawesome.desktop /usr/local/share/applications
+	cp Castawesome.desktop /usr/local/share/applications/
 	chmod +x /usr/local/bin/castawesome /usr/local/bin/uninstall_castawesome
 	chmod +r /usr/local/share/castawesome/ui/*.png
 
