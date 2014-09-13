@@ -110,11 +110,14 @@ class GUI:
 		parameters["keyint"] = str(int(parameters["fps"]) * 2)
 		print parameters["keyint"]
 		
+		print self.settings.get_webcam()
+		
 		if self.settings.get_watermark():
 			# Look at this awesomeness! LOOK AT IT!
 			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -i %(watermark_file)s -f pulse -ac 1 -i default -vcodec libx264 -filter_complex '+ "'overlay=0:main_h-overlay_h-0'" + ' -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b:a 128k -b:v %(bitrate)s -maxrate %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -bufsize %(bitrate)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
 		elif self.settings.get_webcam():
-			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -i /dev/video0 -f pulse -ac 1 -i default -vcodec libx264 -filter_complex '+ "'[0:v]scale=200:-1,setpts=PTS-STARTPTS[bg]; [1:v]scale=120:-1,setpts=PTS-STARTPTS[fg]; [bg][fg]overlay=W-w-10:10,format=yuv420p[out]'" + ' -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b:a 128k -b:v %(bitrate)s -maxrate %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -bufsize %(bitrate)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
+			parameters["placement"] = self.settings.webcamconfig.placement
+			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f v4l2 -video_size 320x240 -i /dev/video0 -f pulse -ac 1 -i default -vcodec libx264 -filter_complex '+ "'[0:v]scale=1024:-1,setpts=PTS-STARTPTS[bg]; [1:v]scale=200:-1,setpts=PTS-STARTPTS[fg]; [bg][fg]overlay=%(placement)s,format=yuv420p[out]' -map '[out]'" + ' -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b:a 128k -b:v %(bitrate)s -maxrate %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -bufsize %(bitrate)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
 		else:
 			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f pulse -ac 1 -i default -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b:a 128k -b:v %(bitrate)s -maxrate %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -bufsize %(bitrate)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
 		print command
@@ -367,7 +370,7 @@ class Settings:
 		return self.watermark_file
 	
 	def get_webcam(self):
-		return self.watermark
+		return self.webcam
 	
 	def get_service(self):
 		return self.service
@@ -457,7 +460,7 @@ class Settings:
 		warning = StreamKey()
 	
 	def on_button_configure_webcam_clicked(self, window):
-		webcam = WebcamConfig()
+		self.webcamconfig = WebcamConfig()
 	
 	# Function to make the program backwards compatible with the old config files
 	def load_legacy_config(self):
@@ -528,6 +531,8 @@ class StreamKey():
 
 # Webcam config
 class WebcamConfig():
+	placement = "0:0"
+	
 	def __init__(self):
 		self.builder = Gtk.Builder()
 		try:
@@ -540,8 +545,8 @@ class WebcamConfig():
 	
 	# A bunch of toggleaction toggle event handlers
 	def on_toggleaction_leftop_toggled(self, sender):
-		print "Hello World!"
 		if sender.get_active():
+			self.placement = "0:0"
 			self.builder.get_object("togglebutton_lefmid").set_active(False)
 			self.builder.get_object("togglebutton_lefbot").set_active(False)
 			self.builder.get_object("togglebutton_midtop").set_active(False)
@@ -552,6 +557,7 @@ class WebcamConfig():
 			self.builder.get_object("togglebutton_rigbot").set_active(False)
 	def on_toggleaction_lefmid_toggled(self, sender):
 		if sender.get_active():
+			self.placement = "0:main_h/2-h/2"
 			self.builder.get_object("togglebutton_leftop").set_active(False)
 			self.builder.get_object("togglebutton_lefbot").set_active(False)
 			self.builder.get_object("togglebutton_midtop").set_active(False)
@@ -562,6 +568,7 @@ class WebcamConfig():
 			self.builder.get_object("togglebutton_rigbot").set_active(False)
 	def on_toggleaction_lefbot_toggled(self, sender):
 		if sender.get_active():
+			self.placement = "0:main_h-h"
 			self.builder.get_object("togglebutton_leftop").set_active(False)
 			self.builder.get_object("togglebutton_lefmid").set_active(False)
 			self.builder.get_object("togglebutton_midtop").set_active(False)
@@ -573,6 +580,7 @@ class WebcamConfig():
 		
 	def on_toggleaction_midtop_toggled(self, sender):
 		if sender.get_active():
+			self.placement = "main_w/2-w/2:0"
 			self.builder.get_object("togglebutton_leftop").set_active(False)
 			self.builder.get_object("togglebutton_lefmid").set_active(False)
 			self.builder.get_object("togglebutton_lefbot").set_active(False)
@@ -583,6 +591,7 @@ class WebcamConfig():
 			self.builder.get_object("togglebutton_rigbot").set_active(False)
 	def on_toggleaction_midmid_toggled(self, sender):
 		if sender.get_active():
+			self.placement = "main_w/2-w/2:main_h/2-h/2"
 			self.builder.get_object("togglebutton_leftop").set_active(False)
 			self.builder.get_object("togglebutton_lefmid").set_active(False)
 			self.builder.get_object("togglebutton_leftop").set_active(False)
@@ -593,6 +602,7 @@ class WebcamConfig():
 			self.builder.get_object("togglebutton_rigbot").set_active(False)
 	def on_toggleaction_midbot_toggled(self, sender):
 		if sender.get_active():
+			self.placement = "main_w/2-w/2:main_h-h"
 			self.builder.get_object("togglebutton_leftop").set_active(False)
 			self.builder.get_object("togglebutton_lefmid").set_active(False)
 			self.builder.get_object("togglebutton_lefbot").set_active(False)
@@ -604,6 +614,7 @@ class WebcamConfig():
 		
 	def on_toggleaction_rigtop_toggled(self, sender):
 		if sender.get_active():
+			self.placement = "main_w-w:0"
 			self.builder.get_object("togglebutton_leftop").set_active(False)
 			self.builder.get_object("togglebutton_lefmid").set_active(False)
 			self.builder.get_object("togglebutton_lefbot").set_active(False)
@@ -614,6 +625,7 @@ class WebcamConfig():
 			self.builder.get_object("togglebutton_rigbot").set_active(False)
 	def on_toggleaction_rigmid_toggled(self, sender):
 		if sender.get_active():
+			self.placement = "main_w-w:main_h/2-h/2"
 			self.builder.get_object("togglebutton_leftop").set_active(False)
 			self.builder.get_object("togglebutton_lefmid").set_active(False)
 			self.builder.get_object("togglebutton_lefbot").set_active(False)
@@ -624,6 +636,7 @@ class WebcamConfig():
 			self.builder.get_object("togglebutton_rigbot").set_active(False)
 	def on_toggleaction_rigbot_toggled(self, sender):
 		if sender.get_active():
+			self.placement = "main_w-w:main_h-h"
 			self.builder.get_object("togglebutton_leftop").set_active(False)
 			self.builder.get_object("togglebutton_lefmid").set_active(False)
 			self.builder.get_object("togglebutton_lefbot").set_active(False)
