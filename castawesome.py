@@ -259,6 +259,7 @@ class Settings:
 			['rtmp://a.rtmp.youtube.com/live2/', 'YouTube'],
 			['rtmp://live.hitbox.tv/push/', 'Hitbox.tv'],
 			['rtmp://live.us.picarto.tv/golive/', "Picarto.tv"],
+			['./', "Local File"],
 			["none", "Custom"]
 		]
 		
@@ -294,8 +295,10 @@ class Settings:
 			self.builder.get_object("combo_service_selector").set_active(2)
 		elif self.service == 'rtmp://live.us.picarto.tv/golive/':
 			self.builder.get_object("combo_service_selector").set_active(3)
-		else:
+		elif self.service == './':
 			self.builder.get_object("combo_service_selector").set_active(4)
+		else:
+			self.builder.get_object("combo_service_selector").set_active(5)
 		
 		# Do the same to quality (compression) presets
 		if self.quality == "ultrafast":
@@ -375,7 +378,7 @@ class Settings:
 	def on_combo_service_selector_changed(self, widget):
 		model = self.builder.get_object("combo_service_selector").get_model()
 		active = self.builder.get_object("combo_service_selector").get_active()
-		if active >= 0 and active != 4:
+		if active >= 0 and active != 5:
 			self.service = model[active][0]
 		print self.service
 	
