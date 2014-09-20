@@ -110,10 +110,11 @@ class GUI:
 		parameters["keyint"] = str(int(parameters["fps"]) * 2)
 		print parameters["keyint"]
 		
-		print self.settings.get_webcam()
 		
-		if self.settings.get_watermark():
-			# Look at this awesomeness! LOOK AT IT!
+		# Decide which ffmpeg/avconv command to use based on the settings
+		if self.settings.get_webcam() and self.settings.get_watermark():
+			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f v4l2 -video_size %(web_resolution)s -framerate %(fps)s -i /dev/video0 -i %(watermark_file)s -f pulse -ac 1 -i default -vcodec libx264 -filter_complex '+ "'overlay=%(web_placement)s,format=yuv420p[out]' -map '[out]'" + ' -filter_complex '+ "'overlay=0:main_h-overlay_h-0'" + ' -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b:a 128k -b:v %(bitrate)s -maxrate %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -bufsize %(bitrate)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
+		elif self.settings.get_watermark():
 			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -i %(watermark_file)s -f pulse -ac 1 -i default -vcodec libx264 -filter_complex '+ "'overlay=0:main_h-overlay_h-0'" + ' -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b:a 128k -b:v %(bitrate)s -maxrate %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -bufsize %(bitrate)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
 		elif self.settings.get_webcam():
 			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f v4l2 -video_size %(web_resolution)s -framerate %(fps)s -i /dev/video0 -f pulse -ac 1 -i default -vcodec libx264 -filter_complex '+ "'overlay=%(web_placement)s,format=yuv420p[out]' -map '[out]'" + ' -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b:a 128k -b:v %(bitrate)s -maxrate %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -bufsize %(bitrate)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
