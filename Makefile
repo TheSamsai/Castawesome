@@ -1,4 +1,4 @@
-version=0.15.0-pre
+version=0.15.0
 avconv_exists := $(shell which avconv)
 ffmpeg_exists := $(shell which ffmpeg)
 

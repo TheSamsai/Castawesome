@@ -288,6 +288,7 @@ class Settings:
 			['rtmp://a.rtmp.youtube.com/live2/', 'YouTube'],
 			['rtmp://live.hitbox.tv/push/', 'Hitbox.tv'],
 			['rtmp://live.us.picarto.tv/golive/', "Picarto.tv"],
+			['./', "Local File"],
 			["none", "Custom"]
 		]
 		
@@ -323,8 +324,10 @@ class Settings:
 			self.builder.get_object("combo_service_selector").set_active(2)
 		elif self.service == 'rtmp://live.us.picarto.tv/golive/':
 			self.builder.get_object("combo_service_selector").set_active(3)
-		else:
+		elif self.service == './':
 			self.builder.get_object("combo_service_selector").set_active(4)
+		else:
+			self.builder.get_object("combo_service_selector").set_active(5)
 		
 		# Do the same to quality (compression) presets
 		if self.quality == "ultrafast":

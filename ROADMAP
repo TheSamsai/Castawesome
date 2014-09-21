@@ -6,8 +6,8 @@
 - lstrip().rstrip() to strip()  ----  Done!
 - Use os.path.join() when joining paths (safer?)  ---  Done, every path concatenation is now done using os.path.join()
 - Check failure conditions instead of reacting to them
-- Check the existance of external tools before calling them
+- Check the existance of external tools before calling them --- Partially handled by the Makefile
 - Better modularity?
-- Watermarks and webcam overlay  -- Partially done, webcam overlays are not yet done, but watermarks work
+- Watermarks and webcam overlay  --- Both are done.
 - Update stream quality controls, maybe a drop-down menu?  --- Done, compression levels are now in a drop-down menu
 - Better window/desktop geometry selection

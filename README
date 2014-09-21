@@ -74,8 +74,8 @@ Installation and usage:
 		Compression:
 			A compression preset. Faster options will compress the stream
 			less, making delays shorter and using less processing power,
-			but make the stream require more bandwidth. Slower presets
-			have an opposite effect.
+			but make the stream look worse. Slower presets increase the
+			delay and the CPU usage but make the video quality less blurry.
 		Bitrate:
 			More specific setting for the stream quality. Higher
 			bitrate makes the stream in less blurry, but also consumes
@@ -99,14 +99,33 @@ Installation and usage:
 			Allows you to pick a PNG image to be used as your watermark.
 			CAUTION: The resolution of the watermark must be less than
 			or equal to the output resolution of your stream!
+		Enable Webcam:
+			Enables the webcam overlay. By default it will be placed to
+			the top left corner. You will need a V4L2 compatible
+			webcam to use this.
+		Configure Webcam:
+			Opens the webcam configuration window, which allows you to
+			configure the placement and resolution of the webcam overlay.
+			The overlay can be placed to any side of the screen or
+			even to the middle of the screen if necessary.
 		Reset Stream Key:
 			Allows you to change the stream key.
 		Service Selector:
 			Service selector is a drop-down menu on the bottom of the
 			settings dialog that allows you to switch between multiple
 			livestream providers (Twitch.tv, Hitbox.tv and YouTube).
+			You can also select "Local File", which will pipe the
+			video to the current directory, or "Custom" which allows
+			you to use an "unsupported" video service.
 			REMEMBER: You will have to re-enter your stream key every 
-			time you change your service. 
+			time you change your service.
+		Custom Service:
+			Here you can configure Castawesome to work with a service
+			that is not officially supported by Castawesome ie. a
+			service that isn't found on the Service Selector.
+			To use this, select "Custom" on the Service Selector and
+			input the RTMP URL to the Custom Service dialog.
+			
 		
 	8.	Click the toggle button to start the stream.
 	
