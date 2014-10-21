@@ -539,7 +539,7 @@ class CustomService():
 		
 	def on_button_apply_custom_clicked(self, window):
 		self.parent.service = self.builder.get_object("entry_rtmp_url").get_text()
-		self.parent.builder.get_object("combo_service_selector").set_active(4)
+		self.parent.builder.get_object("combo_service_selector").set_active(5)
 		self.window.destroy()
 
 # Stream key warning dialog
