@@ -111,7 +111,7 @@ class GUI:
 		print parameters["keyint"]
 		
 		
-		# Decide which ffmpeg/avconv command to use based on the settings
+		# Decide which avconv/avconv command to use based on the settings
 		if self.settings.get_webcam() and self.settings.get_watermark():
 			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f video4linux2 -video_size %(web_resolution)s -framerate %(fps)s -i /dev/video0 -i %(watermark_file)s -f pulse -ac 1 -i default -vcodec libx264 -filter_complex '+ "'setpts=PTS-STARTPTS[bg]; setpts=PTS-STARTPTS[fg]; [bg][fg]overlay=%(web_placement)s[bg2]; [bg2]overlay=0:main_h-overlay_h-0,format=yuv420p[out]' -map '[out]'" + ' -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b:a 128k -b:v %(bitrate)s -maxrate %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -bufsize %(bitrate)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
 		elif self.settings.get_watermark():
@@ -407,6 +407,7 @@ class Settings:
 	def get_watermark(self):
 		return self.watermark
 	
+# Event handlers
 	def on_combo_preset_selector_changed(self, widget):
 		model = self.builder.get_object("combo_preset_selector").get_model()
 		active = self.builder.get_object("combo_preset_selector").get_active()
