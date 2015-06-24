@@ -104,7 +104,9 @@ class GUI:
 		"y_offset" : self.settings.get_y_offset(), "fps" : self.settings.get_fps(), "quality" : self.settings.get_quality(),
 		"bitrate" : self.settings.get_bitrate(), "threads" : self.settings.get_threads(), "show_region" : show_region,
 		"service" : self.settings.get_service(), "watermark" : '-vf "movie=%(watermark_file)s [watermark]; [in][watermark] overlay=0:0 [out]"' % {"watermark_file" : self.settings.get_watermark_file()},
-		"watermark_file" : self.settings.get_watermark_file(), "web_placement" : self.settings.get_webcam_placement(), "web_resolution" : self.settings.get_webcam_resolution()
+		"watermark_file" : self.settings.get_watermark_file(), "web_placement" : self.settings.get_webcam_placement(), "web_resolution" : self.settings.get_webcam_resolution(),
+		"audio_bitrate" : self.settings.get_audio_bitrate(), "video_container" : self.settings.get_video_container(), "video_codec" : self.settings.get_video_codec(),
+		"audio_codec" : self.settings.get_audio_codec()
 		}
 		
 		parameters["keyint"] = str(int(parameters["fps"]) * 2)
@@ -113,13 +115,13 @@ class GUI:
 		
 		# Decide which avconv/avconv command to use based on the settings
 		if self.settings.get_webcam() and self.settings.get_watermark():
-			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f video4linux2 -video_size %(web_resolution)s -framerate %(fps)s -i /dev/video0 -i %(watermark_file)s -f pulse -ac 1 -i default -vcodec libx264 -filter_complex '+ "'setpts=PTS-STARTPTS[bg]; setpts=PTS-STARTPTS[fg]; [bg][fg]overlay=%(web_placement)s[bg2]; [bg2]overlay=0:main_h-overlay_h-0,format=yuv420p[out]' -map '[out]'" + ' -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b:a 128k -b:v %(bitrate)s -maxrate %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -bufsize %(bitrate)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
+			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f video4linux2 -video_size %(web_resolution)s -framerate %(fps)s -i /dev/video0 -i %(watermark_file)s -f pulse -ac 1 -i default -vcodec %(video_container)s -filter_complex '+ "'setpts=PTS-STARTPTS[bg]; setpts=PTS-STARTPTS[fg]; [bg][fg]overlay=%(web_placement)s[bg2]; [bg2]overlay=0:main_h-overlay_h-0,format=yuv420p[out]' -map '[out]'" + ' -s %(outres)s -preset %(quality)s -acodec %(audio_codec)s -ar 44100 -threads %(threads)s -qscale 3 -b:a %(audio_bitrate)s -b:v %(bitrate)s -maxrate %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -bufsize %(bitrate)s -pix_fmt yuv420p -f %(video_container)s "%(service)s' + twitch_key + '"') % parameters
 		elif self.settings.get_watermark():
-			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -i %(watermark_file)s -f pulse -ac 1 -i default -vcodec libx264 -filter_complex '+ "'overlay=0:main_h-overlay_h-0'" + ' -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b:a 128k -b:v %(bitrate)s -maxrate %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -bufsize %(bitrate)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
+			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -i %(watermark_file)s -f pulse -ac 1 -i default -vcodec %(video_codec)s -filter_complex '+ "'overlay=0:main_h-overlay_h-0'" + ' -s %(outres)s -preset %(quality)s -acodec %(audio_codec)s -ar 44100 -threads %(threads)s -qscale 3 -b:a %(audio_bitrate)s -b:v %(bitrate)s -maxrate %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -bufsize %(bitrate)s -pix_fmt yuv420p -f %(video_container)s "%(service)s' + twitch_key + '"') % parameters
 		elif self.settings.get_webcam():
-			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f video4linux2 -video_size %(web_resolution)s -framerate %(fps)s -i /dev/video0 -f pulse -ac 1 -i default -vcodec libx264 -filter_complex '+ "'overlay=%(web_placement)s,format=yuv420p[out]' -map '[out]'" + ' -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b:a 128k -b:v %(bitrate)s -maxrate %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -bufsize %(bitrate)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
+			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f video4linux2 -video_size %(web_resolution)s -framerate %(fps)s -i /dev/video0 -f pulse -ac 1 -i default -vcodec %(video_codec)s -filter_complex '+ "'overlay=%(web_placement)s,format=yuv420p[out]' -map '[out]'" + ' -s %(outres)s -preset %(quality)s -acodec %(audio_codec)s -ar 44100 -threads %(threads)s -qscale 3 -b:a %(audio_bitrate)s -b:v %(bitrate)s -maxrate %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -bufsize %(bitrate)s -pix_fmt yuv420p -f %(video_container)s "%(service)s' + twitch_key + '"') % parameters
 		else:
-			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f pulse -ac 1 -i default -vcodec libx264 -s %(outres)s -preset %(quality)s -acodec libmp3lame -ar 44100 -threads %(threads)s -qscale 3 -b:a 128k -b:v %(bitrate)s -maxrate %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -bufsize %(bitrate)s -pix_fmt yuv420p -f flv "%(service)s' + twitch_key + '"') % parameters
+			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f pulse -ac 1 -i default -vcodec %(video_codec)s -s %(outres)s -preset %(quality)s -acodec %(audio_codec)s -ar 44100 -threads %(threads)s -qscale 3 -b:a %(audio_bitrate)s -b:v %(bitrate)s -maxrate %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -bufsize %(bitrate)s -pix_fmt yuv420p -f %(video_container)s "%(service)s' + twitch_key + '"') % parameters
 		print command
 		# Start a subprocess to handle avconv
 		self.process = subprocess.Popen(command, shell=True)
@@ -149,21 +151,26 @@ class GUI:
 
 # Settings manager for user's settings
 class Settings:
-	inres = ""				# Input resolution
-	outres = ""				# Output resolution
-	x_offset = ""			# X offset
-	y_offset = ""			# Y offset
-	fps = ""				# Frames per Second
-	quality = ""			# Quality (medium, fast, etc.)
-	bitrate = ""			# Bitrate (+300k usually is fine)
-	threads = ""			# Amount of threads
-	show_region = ""		# Show or don't show capture region
-	watermark = ""			# Enable/Disable watermarking
-	watermark_file = ""		# Filename of the watermark
-	webcam = ""				# Enable/Disable webcam
-	webcam_placement = ""	# Placement of the webcam overlay
-	webcam_resolution = ""	# Resolution of the webcam
-	service = ""			# The streaming service in use
+	inres = "1280x720"				# Input resolution
+	outres = "1280x720"				# Output resolution
+	x_offset = "0"					# X offset
+	y_offset = "0"					# Y offset
+	fps = "30"						# Frames per Second
+	quality = "medium"				# Quality (medium, fast, etc.)
+	bitrate = "500k"				# Bitrate (+300k usually is fine)
+	audio_bitrate = "128k"			# <TODO>
+	threads = "1"					# Amount of threads
+	show_region = "0"				# Show or don't show capture region
+	advanced = False
+	video_container = "flv"			# <TODO>
+	video_codec = "libx264"			# <TODO>
+	audio_codec = "mp3"				# <TODO>
+	watermark = False				# Enable/Disable watermarking
+	watermark_file = ""				# Filename of the watermark
+	webcam = False					# Enable/Disable webcam
+	webcam_placement = "0:0"		# Placement of the webcam overlay
+	webcam_resolution = "320x200"	# Resolution of the webcam
+	service = "rtmp://live.twitch.tv/app/"	# The streaming service in use
 
 	def __init__(self):
 		try:
@@ -179,11 +186,16 @@ class Settings:
 	"outres": "1280x720",\n
 	"x_offset": "0",\n
 	"y_offset": "0",\n
-	"fps": "25",\n
+	"fps": "30",\n
 	"quality": "medium",\n
-	"bitrate": "400k",\n
+	"bitrate": "500k",\n
+	"audio_bitrate": "128k",\n
+	"advanced_settings" : "False",\n
+	"video_container": "flv",\n
+	"video_codev": "libx264",\n
+	"audio_codec": "mp3",\n
 	"threads": "1",\n
-	"show_region": "1",\n
+	"show_region": "0",\n
 	"use_watermark" : "False",\n
 	"use_webcam" : "False",\n
 	"webcam_placement" : "0:0",\n
@@ -219,6 +231,14 @@ class Settings:
 				self.fps = lines["fps"]
 				self.quality = lines["quality"]
 				self.bitrate = lines["bitrate"]
+				if lines["advanced_settings"] == "False":
+					self.advanced = False
+				else:
+					self.advanced = True
+				self.audio_bitrate = lines["audio_bitrate"]
+				self.video_container = lines["video_container"]
+				self.video_codec = lines["video_codec"]
+				self.audio_codec = lines["audio_codec"]
 				self.threads = lines["threads"]
 				if lines["show_region"] == "False":
 					self.show_region = False
@@ -268,10 +288,16 @@ class Settings:
 		self.builder.get_object("entry_yoffset").set_text(self.y_offset)
 		self.builder.get_object("entry_fps").set_text(self.fps)
 		self.builder.get_object("entry_bitrate").set_text(self.bitrate)
+		self.builder.get_object("entry_audio_bitrate").set_text(self.audio_bitrate)
+		self.builder.get_object("entry_video_container").set_text(self.video_container)
+		self.builder.get_object("entry_video_codec").set_text(self.video_codec)
+		self.builder.get_object("entry_audio_codec").set_text(self.audio_codec)
 		self.builder.get_object("entry_threads").set_text(self.threads)
 		
 		# Set the capture_region switch to the correct state
 		self.builder.get_object("switch_capture_region").set_active(self.show_region)
+		
+		self.builder.get_object("switch_advanced_settings").set_active(self.advanced)
 		
 		# If watermarking has been enabled, set the filenames and switches
 		if self.watermark:
@@ -357,6 +383,9 @@ class Settings:
 		# If watermarking is disabled, hide the watermarking options
 		if self.watermark == False:
 			self.builder.get_object("box_watermarking").hide()
+			
+		if self.advanced == False:
+			self.builder.get_object("box_advanced").hide()
 
 # All the getters, one for each value
 	def get_inres(self):
@@ -379,7 +408,19 @@ class Settings:
 
 	def get_bitrate(self):
 		return self.bitrate
-
+	
+	def get_audio_bitrate(self):
+		return self.audio_bitrate
+		
+	def get_video_container(self):
+		return self.video_container
+		
+	def get_video_codec(self):
+		return self.video_codec
+		
+	def get_audio_codec(self):
+		return self.audio_codec
+	
 	def get_threads(self):
 		return self.threads
 
@@ -448,6 +489,15 @@ class Settings:
 			self.builder.get_object("box_watermarking").hide()
 		print self.watermark
 	
+	def on_toggle_advanced_toggled(self, widget):
+		self.advanced = widget.get_active()
+		
+		if self.advanced:
+			self.builder.get_object("box_advanced").show()
+		else:
+			self.builder.get_object("box_advanced").hide()
+		print self.advanced
+	
 	def on_button_apply_clicked(self, window):
 		self.inres = self.builder.get_object("entry_inres").get_text()
 		self.outres = self.builder.get_object("entry_outres").get_text()
@@ -455,6 +505,10 @@ class Settings:
 		self.y_offset = self.builder.get_object("entry_yoffset").get_text()
 		self.fps = self.builder.get_object("entry_fps").get_text()
 		self.bitrate = self.builder.get_object("entry_bitrate").get_text()
+		self.audio_bitrate = self.builder.get_object("entry_audio_bitrate").get_text()
+		self.video_container = self.builder.get_object("entry_video_container").get_text()
+		self.video_codec = self.builder.get_object("entry_video_codec").get_text()
+		self.audio_codec = self.builder.get_object("entry_audio_codec").get_text()
 		self.threads = self.builder.get_object("entry_threads").get_text()
 
 		# Save configs in homefolder
@@ -462,8 +516,10 @@ class Settings:
 		# We will use dictionary based formatting expressions
 		d = {"inres" : self.inres, "outres" : self.outres, "x_offset" : self.x_offset,
 		"y_offset" : self.y_offset, "fps" : self.fps, "quality" : self.quality,
-		"bitrate" : self.bitrate, "threads" : self.threads,
-		"show_region" : str(self.show_region), "use_watermark" : str(self.watermark), 
+		"bitrate" : self.bitrate, "audio_bitrate" : self.audio_bitrate, "threads" : self.threads,
+		"video_container" : self.video_container, "video_codec" : self.video_codec,
+		"audio_codec" : self.audio_codec, "show_region" : str(self.show_region), 
+		"use_watermark" : str(self.watermark), "advanced_settings" : str(self.advanced),
 		"watermark_file" : self.watermark_file, "webcam" : str(self.webcam), 
 		"web_placement" : self.webcam_placement, "web_resolution" : self.webcam_resolution,
 		"service" : self.service
@@ -477,6 +533,11 @@ class Settings:
 	"fps": "%(fps)s",
 	"quality": "%(quality)s",
 	"bitrate": "%(bitrate)s",
+	"audio_bitrate" : "%(audio_bitrate)s",
+	"advanced_settings" : "%(advanced_settings)s",
+	"video_container" : "%(video_container)s",
+	"video_codec" : "%(video_codec)s",
+	"audio_codec" : "%(audio_codec)s",
 	"threads": "%(threads)s",
 	"show_region": "%(show_region)s",
 	"use_watermark" : "%(use_watermark)s",
