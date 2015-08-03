@@ -23,6 +23,7 @@ import time
 import thread
 import subprocess, shlex
 import json
+import re
 
 
 # UI files, two for each window
@@ -149,6 +150,42 @@ class GUI:
 			self.process.kill()
 		Gtk.main_quit()
 
+def get_advanced_options():
+	options = {"containers": [], "video": [], "audio": []}
+
+	# make avconv list containers (which it calls formats)
+	for line in subprocess.check_output(["avconv", "-formats"]).splitlines():
+		match = re.match(r"""
+				\s*      # maybe leading whitespace
+				(.{2})   # container properties
+				\s+      # whitespace
+				([\w-]+) # container name, like `flv`
+				\s+      # whitespace
+				(\S+)    # container description""", line, re.X)
+		if match:
+			props, name, desc = match.group(1, 2, 3)
+			if 'E' in props: # only formats that we can actually encode
+				options["containers"].append({"name": name, "desc": desc})
+
+	# make avconv list decoders
+	for line in subprocess.check_output(["avconv", "-decoders"]).splitlines():
+		match = re.match(r"""
+				\s*      # maybe leading whitespace
+				(.{4})   # decoder properties
+				\s+      # whitespace
+				([\w-]+) # decoder name, like `libx264`
+				\s+      # whitespace
+				(.+)     # decoder description""", line, re.X)
+		if match:
+			props, name, desc = match.group(1, 2, 3)
+			decoder = {"name": name, "desc": desc}
+			if 'V' in props: # video codec
+				options["video"].append(decoder)
+			if 'A' in props: # audio codec
+				options["audio"].append(decoder)
+
+	return options
+
 # Settings manager for user's settings
 class Settings:
 	inres = "1280x720"				# Input resolution
@@ -171,6 +208,7 @@ class Settings:
 	webcam_placement = "0:0"		# Placement of the webcam overlay
 	webcam_resolution = "320x200"	# Resolution of the webcam
 	service = "rtmp://live.twitch.tv/app/"	# The streaming service in use
+	advanced_options = get_advanced_options()
 
 	def __init__(self):
 		try:
