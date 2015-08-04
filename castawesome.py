@@ -151,7 +151,7 @@ class GUI:
 		Gtk.main_quit()
 
 def get_advanced_options():
-	options = {"containers": [], "video": [], "audio": []}
+	options = {"video_container": [], "video_codec": [], "audio_codec": []}
 
 	# make avconv list containers (which it calls formats)
 	for line in subprocess.check_output(["avconv", "-formats"]).splitlines():
@@ -165,7 +165,7 @@ def get_advanced_options():
 		if match:
 			props, name, desc = match.group(1, 2, 3)
 			if 'E' in props: # only formats that we can actually encode
-				options["containers"].append({"name": name, "desc": desc})
+				options["video_container"].append({"name": name, "desc": desc})
 
 	# make avconv list decoders
 	for line in subprocess.check_output(["avconv", "-decoders"]).splitlines():
@@ -180,9 +180,9 @@ def get_advanced_options():
 			props, name, desc = match.group(1, 2, 3)
 			decoder = {"name": name, "desc": desc}
 			if 'V' in props: # video codec
-				options["video"].append(decoder)
+				options["video_codec"].append(decoder)
 			if 'A' in props: # audio codec
-				options["audio"].append(decoder)
+				options["audio_codec"].append(decoder)
 
 	return options
 
