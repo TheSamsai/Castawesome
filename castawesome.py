@@ -173,7 +173,7 @@ def get_advanced_options():
 				\s*      # maybe leading whitespace
 				(.{4})   # decoder properties
 				\s+      # whitespace
-				([\w-]+) # decoder name, like `libx264`
+				([\w-]+) # decoder name, like `h264`
 				\s+      # whitespace
 				(.+)     # decoder description""", line, re.X)
 		if match:
@@ -200,7 +200,7 @@ class Settings:
 	show_region = "0"				# Show or don't show capture region
 	advanced = False
 	video_container = "flv"			# <TODO>
-	video_codec = "libx264"			# <TODO>
+	video_codec = "h264"			# <TODO>
 	audio_codec = "mp3"				# <TODO>
 	watermark = False				# Enable/Disable watermarking
 	watermark_file = ""				# Filename of the watermark
@@ -230,7 +230,7 @@ class Settings:
 	"audio_bitrate": "128k",\n
 	"advanced_settings" : "False",\n
 	"video_container": "flv",\n
-	"video_codev": "libx264",\n
+	"video_codev": "h264",\n
 	"audio_codec": "mp3",\n
 	"threads": "1",\n
 	"show_region": "0",\n
