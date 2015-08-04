@@ -116,13 +116,13 @@ class GUI:
 		
 		# Decide which avconv/avconv command to use based on the settings
 		if self.settings.get_webcam() and self.settings.get_watermark():
-			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f video4linux2 -video_size %(web_resolution)s -framerate %(fps)s -i /dev/video0 -i %(watermark_file)s -f pulse -ac 1 -i default -vcodec %(video_container)s -filter_complex '+ "'setpts=PTS-STARTPTS[bg]; setpts=PTS-STARTPTS[fg]; [bg][fg]overlay=%(web_placement)s[bg2]; [bg2]overlay=0:main_h-overlay_h-0,format=yuv420p[out]' -map '[out]'" + ' -s %(outres)s -preset %(quality)s -acodec %(audio_codec)s -ar 44100 -threads %(threads)s -qscale 3 -b:a %(audio_bitrate)s -b:v %(bitrate)s -maxrate %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -bufsize %(bitrate)s -pix_fmt yuv420p -f %(video_container)s "%(service)s' + twitch_key + '"') % parameters
+			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f video4linux2 -video_size %(web_resolution)s -framerate %(fps)s -i /dev/video0 -i %(watermark_file)s -f pulse -ac 1 -i default -vcodec %(video_container)s -filter_complex '+ "'setpts=PTS-STARTPTS[bg]; setpts=PTS-STARTPTS[fg]; [bg][fg]overlay=%(web_placement)s[bg2]; [bg2]overlay=0:main_h-overlay_h-0,format=yuv420p[out]' -map '[out]'" + ' -s %(outres)s -preset %(quality)s -acodec %(audio_codec)s -ar 44100 -threads %(threads)s -qscale 3 -b:a %(audio_bitrate)s -b:v %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -pix_fmt yuv420p -f %(video_container)s "%(service)s' + twitch_key + '"') % parameters
 		elif self.settings.get_watermark():
-			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -i %(watermark_file)s -f pulse -ac 1 -i default -vcodec %(video_codec)s -filter_complex '+ "'overlay=0:main_h-overlay_h-0'" + ' -s %(outres)s -preset %(quality)s -acodec %(audio_codec)s -ar 44100 -threads %(threads)s -qscale 3 -b:a %(audio_bitrate)s -b:v %(bitrate)s -maxrate %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -bufsize %(bitrate)s -pix_fmt yuv420p -f %(video_container)s "%(service)s' + twitch_key + '"') % parameters
+			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -i %(watermark_file)s -f pulse -ac 1 -i default -vcodec %(video_codec)s -filter_complex '+ "'overlay=0:main_h-overlay_h-0'" + ' -s %(outres)s -preset %(quality)s -acodec %(audio_codec)s -ar 44100 -threads %(threads)s -qscale 3 -b:a %(audio_bitrate)s -b:v %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -pix_fmt yuv420p -f %(video_container)s "%(service)s' + twitch_key + '"') % parameters
 		elif self.settings.get_webcam():
-			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f video4linux2 -video_size %(web_resolution)s -framerate %(fps)s -i /dev/video0 -f pulse -ac 1 -i default -vcodec %(video_codec)s -filter_complex '+ "'overlay=%(web_placement)s,format=yuv420p[out]' -map '[out]'" + ' -s %(outres)s -preset %(quality)s -acodec %(audio_codec)s -ar 44100 -threads %(threads)s -qscale 3 -b:a %(audio_bitrate)s -b:v %(bitrate)s -maxrate %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -bufsize %(bitrate)s -pix_fmt yuv420p -f %(video_container)s "%(service)s' + twitch_key + '"') % parameters
+			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f video4linux2 -video_size %(web_resolution)s -framerate %(fps)s -i /dev/video0 -f pulse -ac 1 -i default -vcodec %(video_codec)s -filter_complex '+ "'overlay=%(web_placement)s,format=yuv420p[out]' -map '[out]'" + ' -s %(outres)s -preset %(quality)s -acodec %(audio_codec)s -ar 44100 -threads %(threads)s -qscale 3 -b:a %(audio_bitrate)s -b:v %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -pix_fmt yuv420p -f %(video_container)s "%(service)s' + twitch_key + '"') % parameters
 		else:
-			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f pulse -ac 1 -i default -vcodec %(video_codec)s -s %(outres)s -preset %(quality)s -acodec %(audio_codec)s -ar 44100 -threads %(threads)s -qscale 3 -b:a %(audio_bitrate)s -b:v %(bitrate)s -maxrate %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -bufsize %(bitrate)s -pix_fmt yuv420p -f %(video_container)s "%(service)s' + twitch_key + '"') % parameters
+			command = str('avconv -f x11grab -show_region %(show_region)s -s %(inres)s -framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s -f pulse -ac 1 -i default -vcodec %(video_codec)s -s %(outres)s -preset %(quality)s -acodec %(audio_codec)s -ar 44100 -threads %(threads)s -qscale 3 -b:a %(audio_bitrate)s -b:v %(bitrate)s -minrate %(bitrate)s -g %(keyint)s -pix_fmt yuv420p -f %(video_container)s "%(service)s' + twitch_key + '"') % parameters
 		print command
 		# Start a subprocess to handle avconv
 		self.process = subprocess.Popen(command, shell=True)
@@ -173,7 +173,7 @@ def get_advanced_options():
 				\s*      # maybe leading whitespace
 				(.{4})   # decoder properties
 				\s+      # whitespace
-				([\w-]+) # decoder name, like `libx264`
+				([\w-]+) # decoder name, like `h264`
 				\s+      # whitespace
 				(.+)     # decoder description""", line, re.X)
 		if match:
@@ -200,7 +200,7 @@ class Settings:
 	show_region = "0"				# Show or don't show capture region
 	advanced = False
 	video_container = "flv"			# <TODO>
-	video_codec = "libx264"			# <TODO>
+	video_codec = "h264"			# <TODO>
 	audio_codec = "mp3"				# <TODO>
 	watermark = False				# Enable/Disable watermarking
 	watermark_file = ""				# Filename of the watermark
@@ -230,7 +230,7 @@ class Settings:
 	"audio_bitrate": "128k",\n
 	"advanced_settings" : "False",\n
 	"video_container": "flv",\n
-	"video_codev": "libx264",\n
+	"video_codev": "h264",\n
 	"audio_codec": "mp3",\n
 	"threads": "1",\n
 	"show_region": "0",\n
