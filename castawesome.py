@@ -23,6 +23,7 @@ import time
 import thread
 import subprocess, shlex
 import json
+import re
 
 
 # UI files, two for each window
@@ -149,6 +150,42 @@ class GUI:
 			self.process.kill()
 		Gtk.main_quit()
 
+def get_advanced_options():
+	options = {"video_container": [], "video_codec": [], "audio_codec": []}
+
+	# make avconv list containers (which it calls formats)
+	for line in subprocess.check_output(["avconv", "-formats"]).splitlines():
+		match = re.match(r"""
+				\s*      # maybe leading whitespace
+				(.{2})   # container properties
+				\s+      # whitespace
+				([\w-]+) # container name, like `flv`
+				\s+      # whitespace
+				(\S+)    # container description""", line, re.X)
+		if match:
+			props, name, desc = match.group(1, 2, 3)
+			if 'E' in props: # only formats that we can actually encode
+				options["video_container"].append({"name": name, "desc": desc})
+
+	# make avconv list decoders
+	for line in subprocess.check_output(["avconv", "-decoders"]).splitlines():
+		match = re.match(r"""
+				\s*      # maybe leading whitespace
+				(.{4})   # decoder properties
+				\s+      # whitespace
+				([\w-]+) # decoder name, like `libx264`
+				\s+      # whitespace
+				(.+)     # decoder description""", line, re.X)
+		if match:
+			props, name, desc = match.group(1, 2, 3)
+			decoder = {"name": name, "desc": desc}
+			if 'V' in props: # video codec
+				options["video_codec"].append(decoder)
+			if 'A' in props: # audio codec
+				options["audio_codec"].append(decoder)
+
+	return options
+
 # Settings manager for user's settings
 class Settings:
 	inres = "1280x720"				# Input resolution
@@ -171,6 +208,7 @@ class Settings:
 	webcam_placement = "0:0"		# Placement of the webcam overlay
 	webcam_resolution = "320x200"	# Resolution of the webcam
 	service = "rtmp://live.twitch.tv/app/"	# The streaming service in use
+	advanced_options = get_advanced_options()
 
 	def __init__(self):
 		try:
@@ -289,9 +327,6 @@ class Settings:
 		self.builder.get_object("entry_fps").set_text(self.fps)
 		self.builder.get_object("entry_bitrate").set_text(self.bitrate)
 		self.builder.get_object("entry_audio_bitrate").set_text(self.audio_bitrate)
-		self.builder.get_object("entry_video_container").set_text(self.video_container)
-		self.builder.get_object("entry_video_codec").set_text(self.video_codec)
-		self.builder.get_object("entry_audio_codec").set_text(self.audio_codec)
 		self.builder.get_object("entry_threads").set_text(self.threads)
 		
 		# Set the capture_region switch to the correct state
@@ -336,10 +371,27 @@ class Settings:
 		for otheritem in presets:
 			self.builder.get_object("list_presets").append(otheritem)
 		
+		# Append advanced options to GTK's liststores
+		for key in ["video_container", "video_codec", "audio_codec"]:
+			lst = self.builder.get_object("list_" + key)
+			val = getattr(self, "get_" + key)()
+			idx = 0
+			for item in self.advanced_options[key]:
+				name = item["name"]
+				lst.append([name])
+				if name == val:
+					self.builder.get_object("combo_" + key).set_active(idx)
+				idx += 1
+		
 		# Stupid hack for GTK's weirdness
-		cell = Gtk.CellRendererText()
-		self.builder.get_object("combo_preset_selector").pack_start(cell, True)
-		self.builder.get_object("combo_preset_selector").add_attribute(cell, 'text', 0)
+		for obj in [
+				"combo_preset_selector",
+				"combo_video_container",
+				"combo_video_codec",
+				"combo_audio_codec"]:
+			cell = Gtk.CellRendererText()
+			self.builder.get_object(obj).pack_start(cell, True)
+			self.builder.get_object(obj).add_attribute(cell, 'text', 0)
 		
 		# Set the service selector based on the loaded configs
 		if self.service == 'rtmp://live.twitch.tv/app/':
@@ -498,6 +550,13 @@ class Settings:
 			self.builder.get_object("box_advanced").hide()
 		print self.advanced
 	
+	def on_advanced_option_changed(self, widget):
+		key = Gtk.Buildable.get_name(widget)[len("combo_"):]
+		active = widget.get_active()
+		if active >= 0:
+			setattr(self, key, widget.get_model()[active][0])
+		print "{0}: {1}".format(key, getattr(self, "get_" + key)())
+	
 	def on_button_apply_clicked(self, window):
 		self.inres = self.builder.get_object("entry_inres").get_text()
 		self.outres = self.builder.get_object("entry_outres").get_text()
@@ -506,9 +565,6 @@ class Settings:
 		self.fps = self.builder.get_object("entry_fps").get_text()
 		self.bitrate = self.builder.get_object("entry_bitrate").get_text()
 		self.audio_bitrate = self.builder.get_object("entry_audio_bitrate").get_text()
-		self.video_container = self.builder.get_object("entry_video_container").get_text()
-		self.video_codec = self.builder.get_object("entry_video_codec").get_text()
-		self.audio_codec = self.builder.get_object("entry_audio_codec").get_text()
 		self.threads = self.builder.get_object("entry_threads").get_text()
 
 		# Save configs in homefolder
