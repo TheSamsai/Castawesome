@@ -230,7 +230,7 @@ class Settings:
 	"audio_bitrate": "128k",\n
 	"advanced_settings" : "False",\n
 	"video_container": "flv",\n
-	"video_codev": "h264",\n
+	"video_codec": "h264",\n
 	"audio_codec": "mp3",\n
 	"threads": "1",\n
 	"show_region": "0",\n
