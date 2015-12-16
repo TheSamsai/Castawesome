@@ -26,6 +26,7 @@ install:
 	cp README AUTHORS NEWS COPYING /usr/local/share/castawesome/doc
 	cp castawesome.py /usr/local/bin/castawesome
 	cp uninstall_castawesome.sh /usr/local/bin/uninstall_castawesome
+	cp IconCA.png /usr/share/pixmaps/castawesome.png
 	cp Castawesome.desktop /usr/local/share/applications/
 	chmod +x /usr/local/bin/castawesome /usr/local/bin/uninstall_castawesome
 	chmod +r /usr/local/share/castawesome/ui/*.png
@@ -33,6 +34,7 @@ install:
 uninstall:
 	rm -rf /usr/local/share/castawesome
 	rm -f /usr/local/bin/castawesome /usr/local/bin/uninstall_castawesome
+	rm -f /usr/share/pixmaps/castawesome
 	rm -f /usr/local/share/applications/Castawesome.desktop
 
 use_avconv:
