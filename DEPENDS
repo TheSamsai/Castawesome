@@ -1,5 +1,6 @@
 libav-tools or ffmpeg
 libavcodec-extra-53 or similar ffmpeg package
 libgtk-3-0
-python2
-python2-gobject (sometimes necessary on Arch Linux)
+python3
+python3-gobject (sometimes necessary on Arch Linux)
+python3-gi

@@ -1,3 +1,25 @@
+	#24.12.2015
+Release notes for version 0.16
+
+It's been a while since I've actually wrote anything here. For some time
+Castawesome has been running in maintenance mode and I have only fixed
+some minor issues myself. However, after the move to Github I have
+received numerous third-party contributions which have changed the GUI
+and some core functionality.
+
+The big thing in 0.16 is that Castawesome now runs on Python 3. Due to
+Python 3 being slightly incompatible with Python 2, Python 2 support is
+now officially dropped in this version and in future versions. Versions
+prior to 0.16 still use Python 2. This means that you might have to
+install Python 3 and associated libraries (check the DEPENDS file) to
+run 0.16. Most Linux distros already ship Python 3 and some even have
+it out of the box so distro compatibility should remain more or less
+the same.
+
+I would like to thank all the contributors for their awesome work on
+this project. I cannot claim credit for much of the things that
+happened after 0.15 shipped. 
+
 	#21.09.2014
 Release notes for version 0.15
 
