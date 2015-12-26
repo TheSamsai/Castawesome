@@ -98,9 +98,11 @@ class GUI:
 
     def stream(self):
         # Twitch key needs to be read to stream video
-        fob = open(os.path.join(home, ".config/castawesome/.twitch_key"), "r")
-        twitch_key = fob.read().strip()
-        fob.close()
+        with open(
+            os.path.join(home, ".config/castawesome/.twitch_key"),
+            "r"
+        ) as fob:
+            twitch_key = fob
 
         # Decide whether to enable visible screen regions
         if self.settings.get_show_region():
@@ -300,11 +302,11 @@ class Settings:
                 os.system("chmod 700 ~/.config/castawesome/.twitch_key")
 
                 # Default settings for the user
-                fob = open(
+                with open(
                     os.path.join(home, ".config/castawesome/config.txt"),
                     "w"
-                )
-                fob.write("""{
+                ) as fob:
+                    fob.write("""{
     "inres": "1280x720",\n
     "outres": "1280x720",\n
     "x_offset": "0",\n
@@ -325,26 +327,24 @@ class Settings:
     "webcam_resolution" : "320x200",\n
     "service": "rtmp://live.twitch.tv/app/"\n
 }""")
-                fob.close()
             except:
                 print ("Config files exist...")
 
-            fob = open(
+            with open(
                 os.path.join(home, ".config/castawesome/.twitch_key"),
                 "r"
-            )
-            key = fob.read()
-            fob.close()
+            ) as fob:
+                key = fob.read()
 
             if key == "":
                 warning = StreamKey()
 
-            fob = open(
+            with open(
                 os.path.join(home, ".config/castawesome/config.txt"),
                 "r"
-            )
-            lines = fob.read()
-            fob.close()
+            ) as fob:
+                lines = fob.read()
+
             # What if user has legacy config files?
             if "{" not in lines[0]:
                 print ("Using legacy config loader...")
@@ -664,54 +664,55 @@ class Settings:
         self.threads = self.builder.get_object("entry_threads").get_text()
 
         # Save configs in homefolder
-        fob = open(os.path.join(home, ".config/castawesome/config.txt"), "w")
-        # We will use dictionary based formatting expressions
-        d = {
-            "inres": self.inres,
-            "outres": self.outres,
-            "x_offset": self.x_offset,
-            "y_offset": self.y_offset,
-            "fps": self.fps,
-            "quality": self.quality,
-            "bitrate": self.bitrate,
-            "audio_bitrate": self.audio_bitrate,
-            "threads": self.threads,
-            "video_container": self.video_container,
-            "video_codec": self.video_codec,
-            "audio_codec": self.audio_codec,
-            "show_region": str(self.show_region),
-            "use_watermark": str(self.watermark),
-            "advanced_settings": str(self.advanced),
-            "watermark_file": self.watermark_file,
-            "webcam": str(self.webcam),
-            "web_placement": self.webcam_placement,
-            "web_resolution": self.webcam_resolution,
-            "service": self.service
-        }
+        with open(
+            os.path.join(home, ".config/castawesome/config.txt"),
+            "w"
+        ) as fob:
+            # We will use dictionary based formatting expressions
+            d = {
+                "inres": self.inres,
+                "outres": self.outres,
+                "x_offset": self.x_offset,
+                "y_offset": self.y_offset,
+                "fps": self.fps,
+                "quality": self.quality,
+                "bitrate": self.bitrate,
+                "audio_bitrate": self.audio_bitrate,
+                "threads": self.threads,
+                "video_container": self.video_container,
+                "video_codec": self.video_codec,
+                "audio_codec": self.audio_codec,
+                "show_region": str(self.show_region),
+                "use_watermark": str(self.watermark),
+                "advanced_settings": str(self.advanced),
+                "watermark_file": self.watermark_file,
+                "webcam": str(self.webcam),
+                "web_placement": self.webcam_placement,
+                "web_resolution": self.webcam_resolution,
+                "service": self.service
+            }
 
-        fob.write("""{
-    "inres": "%(inres)s",
-    "outres": "%(outres)s",
-    "x_offset": "%(x_offset)s",
-    "y_offset": "%(y_offset)s",
-    "fps": "%(fps)s",
-    "quality": "%(quality)s",
-    "bitrate": "%(bitrate)s",
-    "audio_bitrate" : "%(audio_bitrate)s",
-    "advanced_settings" : "%(advanced_settings)s",
-    "video_container" : "%(video_container)s",
-    "video_codec" : "%(video_codec)s",
-    "audio_codec" : "%(audio_codec)s",
-    "threads": "%(threads)s",
-    "show_region": "%(show_region)s",
-    "use_watermark" : "%(use_watermark)s",
-    "watermark_file" : "%(watermark_file)s",
-    "use_webcam" : "%(webcam)s",
-    "webcam_placement" : "%(web_placement)s",
-    "webcam_resolution" : "%(web_resolution)s",
-    "service": "%(service)s"\n}""" % d)
-
-        fob.close()
+            fob.write("""{
+        "inres": "%(inres)s",
+        "outres": "%(outres)s",
+        "x_offset": "%(x_offset)s",
+        "y_offset": "%(y_offset)s",
+        "fps": "%(fps)s",
+        "quality": "%(quality)s",
+        "bitrate": "%(bitrate)s",
+        "audio_bitrate" : "%(audio_bitrate)s",
+        "advanced_settings" : "%(advanced_settings)s",
+        "video_container" : "%(video_container)s",
+        "video_codec" : "%(video_codec)s",
+        "audio_codec" : "%(audio_codec)s",
+        "threads": "%(threads)s",
+        "show_region": "%(show_region)s",
+        "use_watermark" : "%(use_watermark)s",
+        "watermark_file" : "%(watermark_file)s",
+        "use_webcam" : "%(webcam)s",
+        "webcam_placement" : "%(web_placement)s",
+        "webcam_resolution" : "%(web_resolution)s",
+        "service": "%(service)s"\n}""" % d)
 
     def on_button_custom_service_clicked(self, window):
         custom = CustomService(self)
@@ -726,22 +727,20 @@ class Settings:
     # with the old config files
     def load_legacy_config(self):
         try:
-            fob = open(
+            with open(
                 os.path.join(home, ".config/castawesome/.twitch_key"),
                 "r"
-            )
-            key = fob.read()
-            fob.close()
+            ) as fob:
+                key = fob.read()
 
             if key == "":
                 warning = StreamKey()
 
-            fob = open(
+            with open(
                 os.path.join(home, ".config/castawesome/config.txt"),
                 "r"
-            )
-            lines = fob.readlines()
-            fob.close()
+            ) as fob:
+                lines = fob.readlines()
 
             self.inres = lines[0].strip()
             self.outres = lines[1].strip()
@@ -793,9 +792,11 @@ class StreamKey():
         self.window.show_all()
 
     def on_button_ok_clicked(self, window):
-        fob = open(os.path.join(home, ".config/castawesome/.twitch_key"), "w")
-        fob.write(self.builder.get_object("entry_streamkey").get_text())
-        fob.close()
+        with open(
+            os.path.join(home, ".config/castawesome/.twitch_key"),
+            "w"
+        ) as fob:
+            fob.write(self.builder.get_object("entry_streamkey").get_text())
 
         self.window.destroy()
 
