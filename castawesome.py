@@ -297,7 +297,10 @@ class Settings:
                 os.mkdir(os.path.join(home, ".config/castawesome"))
                 # Configuration files are missing, create them and add defaults
                 os.system("touch ~/.config/castawesome/.twitch_key")
-                os.system("chmod 700 ~/.config/castawesome/.twitch_key")
+                os.chmod(
+                    os.path.join(home, ".config/castawesome/.twitch_key"),
+                    0o600
+                )
 
                 # Default settings for the user
                 fob = open(
@@ -796,6 +799,10 @@ class StreamKey():
         fob = open(os.path.join(home, ".config/castawesome/.twitch_key"), "w")
         fob.write(self.builder.get_object("entry_streamkey").get_text())
         fob.close()
+        os.chmod(
+            os.path.join(home, ".config/castawesome/.twitch_key"),
+            0o600
+        )
 
         self.window.destroy()
 
