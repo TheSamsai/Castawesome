@@ -599,6 +599,13 @@ class Settings:
         return self.service
 
 # Event handlers
+    def on_button_fullscreen_clicked(self, window):
+        screen = Gdk.Screen.get_default()
+        self.builder.get_object("entry_inres").set_text(
+            (str)(screen.get_width()) + 'x' + (str)(screen.get_height())
+        )
+        self.inres = self.builder.get_object("entry_inres").get_text()
+
     def on_combo_preset_selector_changed(self, widget):
         model = self.builder.get_object("combo_preset_selector").get_model()
         active = self.builder.get_object("combo_preset_selector").get_active()
