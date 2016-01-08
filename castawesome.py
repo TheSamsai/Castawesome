@@ -50,6 +50,7 @@ class GUI:
     screen_output_resolution_ratio = None
     webcam_resolution_ratio = None
     webcam_button_lock = False
+    application_process = None
 
     def __init__(self):
         self.builder = Gtk.Builder()
@@ -214,6 +215,11 @@ class GUI:
             .set_text(self.settings.service)
         self.builder.get_object("adjustment_threads")\
             .set_upper(multiprocessing.cpu_count())
+        # Initialize the Application tab.
+        self.builder.get_object("switch_run_application")\
+            .set_active(self.settings.run_application)
+        self.builder.get_object("entry_application")\
+            .set_text(self.settings.application)
         # Initialize the Watermark tab.
         self.builder.get_object("switch_watermark")\
             .set_active(self.settings.watermark)
@@ -234,16 +240,18 @@ class GUI:
             .set_text(self.settings.webcam_resolution.split('x')[1])
 
     def on_togglebutton_record_toggled(self, togglebutton):
-        togglebutton.set_sensitive(False)
-        self.builder.get_object("togglebutton_stop").set_sensitive(True)
-        self.builder.get_object("togglebutton_stop").set_active(False)
-        self.on_toggle_streaming_toggled(togglebutton)
+        if togglebutton.get_active():
+            togglebutton.set_sensitive(False)
+            self.builder.get_object("togglebutton_stop").set_sensitive(True)
+            self.builder.get_object("togglebutton_stop").set_active(False)
+            self.on_toggle_streaming_toggled(togglebutton)
 
     def on_togglebutton_stop_toggled(self, togglebutton):
-        togglebutton.set_sensitive(False)
-        self.builder.get_object("togglebutton_record").set_sensitive(True)
-        self.builder.get_object("togglebutton_record").set_active(False)
-        self.on_toggle_streaming_toggled(togglebutton)
+        if togglebutton.get_active():
+            togglebutton.set_sensitive(False)
+            self.builder.get_object("togglebutton_record").set_sensitive(True)
+            self.builder.get_object("togglebutton_record").set_active(False)
+            self.on_toggle_streaming_toggled(togglebutton)
 
     def on_toggle_input_resolution_link_toggled(self, togglebutton):
         if togglebutton.get_active():
@@ -476,6 +484,14 @@ class GUI:
     def on_key_changed(self, entry):
         if entry.get_text() != '':
             self.stream_key.key = entry.get_text()
+
+    def on_toggle_run_application_toggled(self, toggle):
+        self.settings.run_application = toggle.get_active()
+        self.builder.get_object("entry_application")\
+            .set_sensitive(toggle.get_active())
+
+    def on_application_changed(self, entry):
+        self.settings.application = entry.get_text()
 
     def on_toggle_watermark_toggled(self, toggle):
         self.settings.watermark = toggle.get_active()
@@ -764,15 +780,25 @@ class GUI:
             + '-g %(keyint)s -pix_fmt yuv420p '
             + '-f %(video_container)s "%(service)s' + self.stream_key.key + '"'
         ) % parameters
+        if self.settings.run_application:
+            self.application_process = subprocess.Popen(
+                self.settings.application,
+                stdout=subprocess.PIPE,
+                shell=True
+            )
         print (command.replace(self.stream_key.key, '<_stream_key_>'))
         # Start a subprocess to handle avconv
-        self.process = subprocess.Popen(command, shell=True)
+        self.process = subprocess.Popen(
+            command,
+            shell=True,
+            stdout=subprocess.PIPE
+        )
 
     def update_timer(self):
         # Just minute/second counter, nothing fancy here
         if self.streaming:
             self.counter_sec += 1
-            if(self.counter_sec == 60):
+            if self.counter_sec == 60:
                 self.counter_min += 1
                 self.counter_sec = 0
 
@@ -780,6 +806,10 @@ class GUI:
             label.set_text(
                 "Time: %02d:%02d" % (self.counter_min, self.counter_sec)
             )
+            if self.settings.run_application\
+                    and self.application_process is not None\
+                    and self.application_process.poll() is not None:
+                self.builder.get_object("togglebutton_stop").set_active(True)
         else:
             self.counter_min = 0
             self.counter_sec = 0
@@ -826,12 +856,12 @@ def get_advanced_options():
     for line in subprocess.check_output(["avconv", "-decoders"]).splitlines():
         match = re.match(
             b"""
-            \s*      # maybe leading whitespace
-            (.{4})   # decoder properties
-            \s+      # whitespace
-            ([\w-]+) # decoder name, like `h264`
-            \s+      # whitespace
-            (.+)     # decoder description""",
+            \s*            # maybe leading whitespace
+            ([.VASFXBD]+)  # decoder properties
+            \s+            # whitespace
+            ([\w-]+)       # decoder name, like `h264`
+            \s+            # whitespace
+            (.+)           # decoder description""",
             line,
             re.X
         )
@@ -872,13 +902,14 @@ class Settings:
     video_container = "flv"            # <TODO>
     video_codec = "h264"            # <TODO>
     audio_codec = "mp3"                # <TODO>
+    run_application = False
+    application = ""
     watermark = False                # Enable/Disable watermarking
     watermark_file = ""                # Filename of the watermark
     webcam = False                    # Enable/Disable webcam
     webcam_placement = "0:0"        # Placement of the webcam overlay
     webcam_resolution = "320x200"    # Resolution of the webcam
     service = "rtmp://live.twitch.tv/app/"    # The streaming service in use
-    advanced_options = get_advanced_options()
 
     def __init__(self, builder):
         try:
@@ -907,7 +938,6 @@ class Settings:
             self.load_legacy_config()
         else:
             lines = json.loads(lines)
-            print (lines)
 
             self.inres = lines["inres"]
             self.outres = lines["outres"]
@@ -920,6 +950,11 @@ class Settings:
             self.video_container = lines["video_container"]
             self.video_codec = lines["video_codec"]
             self.audio_codec = lines["audio_codec"]
+            if lines["run_application"] == "False":
+                self.run_application = False
+            else:
+                self.run_application = True
+            self.application = lines["application"]
             self.threads = lines["threads"]
             if lines["show_region"] == "False":
                 self.show_region = False
@@ -970,6 +1005,8 @@ class Settings:
                 "video_container": self.video_container,
                 "video_codec": self.video_codec,
                 "audio_codec": self.audio_codec,
+                "run_application": str(self.run_application),
+                "application": self.application,
                 "show_region": str(self.show_region),
                 "use_watermark": str(self.watermark),
                 "watermark_file": self.watermark_file,
@@ -992,6 +1029,8 @@ class Settings:
     "video_codec" : "%(video_codec)s",
     "audio_codec" : "%(audio_codec)s",
     "threads": "%(threads)s",
+    "run_application": "%(run_application)s",
+    "application": "%(application)s",
     "show_region": "%(show_region)s",
     "use_watermark" : "%(use_watermark)s",
     "watermark_file" : "%(watermark_file)s",
