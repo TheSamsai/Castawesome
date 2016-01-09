@@ -503,6 +503,7 @@
                 <property name="label" translatable="yes">Screen</property>
               </object>
               <packing>
+                <property name="tab_expand">True</property>
                 <property name="tab_fill">False</property>
               </packing>
             </child>
@@ -794,6 +795,7 @@
               </object>
               <packing>
                 <property name="position">1</property>
+                <property name="tab_expand">True</property>
                 <property name="tab_fill">False</property>
               </packing>
             </child>
@@ -841,6 +843,7 @@
               </object>
               <packing>
                 <property name="position">2</property>
+                <property name="tab_expand">True</property>
               </packing>
             </child>
             <child type="tab">
@@ -851,6 +854,7 @@
               </object>
               <packing>
                 <property name="position">2</property>
+                <property name="tab_expand">True</property>
                 <property name="tab_fill">False</property>
               </packing>
             </child>
@@ -925,6 +929,7 @@
               </object>
               <packing>
                 <property name="position">3</property>
+                <property name="tab_expand">True</property>
                 <property name="tab_fill">False</property>
               </packing>
             </child>
@@ -1179,6 +1184,7 @@
               </object>
               <packing>
                 <property name="position">4</property>
+                <property name="tab_expand">True</property>
                 <property name="tab_fill">False</property>
               </packing>
             </child>
@@ -1228,8 +1234,9 @@
             </child>
           </object>
           <packing>
-            <property name="expand">True</property>
-            <property name="fill">False</property>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="pack_type">end</property>
             <property name="position">3</property>
           </packing>
         </child>
