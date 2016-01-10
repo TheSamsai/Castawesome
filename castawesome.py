@@ -22,22 +22,23 @@ import sys
 import subprocess
 import json
 import re
+import multiprocessing
+import operator
 
 
 # UI files, two for each window
 # One is for local installation and one for system-wide installation
-UI_FILE1 = "castawesome.ui"
-UI_FILE2 = "/usr/local/share/castawesome/ui/castawesome.ui"
-SETUP_UI_FILE1 = "castawesome_settings.ui"
-SETUP_UI_FILE2 = "/usr/local/share/castawesome/ui/castawesome_settings.ui"
-STREAMKEY_UI_FILE1 = "castawesome_streamkey.ui"
-STREAMKEY_UI_FILE2 = "/usr/local/share/castawesome/ui/castawesome_streamkey.ui"
-ABOUT_UI_FILE1 = "castawesome_about.ui"
-ABOUT_UI_FILE2 = "/usr/local/share/castawesome/ui/castawesome_about.ui"
-CUSTOM_UI_FILE1 = "castawesome_custom.ui"
-CUSTOM_UI_FILE2 = "/usr/local/share/castawesome/ui/castawesome_custom.ui"
-WEBCAM_UI_FILE1 = "castawesome_webcam.ui"
-WEBCAM_UI_FILE2 = "/usr/local/share/castawesome/ui/castawesome_webcam.ui"
+CONFIG_DIRECTORY = ".config/castawesome/"
+SHARED_DIRECTORY = "/usr/local/share/castawesome/"
+CONFIG_FILE = CONFIG_DIRECTORY + "config.txt"
+IMAGE_CHAIN_CONNECTED = "gimp-vchain.png"
+IMAGE_CHAIN_BROKEN = "gimp-vchain-broken.png"
+IMAGE_LOGO = "CastA1.png"
+STREAM_KEY = CONFIG_DIRECTORY + ".twitch_key"
+UI_MAIN_LOCAL = "castawesome.ui"
+UI_MAIN_SHARED = SHARED_DIRECTORY + "ui/castawesome.ui"
+ABOUT_UI_FILE_LOCAL = "castawesome_about.ui"
+ABOUT_UI_FILE_SHARED = SHARED_DIRECTORY + "/ui/castawesome_about.ui"
 
 # A "hack" to get path to user's home folder
 home = os.path.expanduser("~")
@@ -45,27 +46,60 @@ home = os.path.expanduser("~")
 
 class GUI:
     streaming = False
+    screen_input_resolution_ratio = None
+    screen_output_resolution_ratio = None
+    webcam_resolution_ratio = None
+    webcam_button_lock = False
+    application_process = None
 
     def __init__(self):
         self.builder = Gtk.Builder()
+        self.settings = Settings(self.builder)
+        self.stream_key = StreamKey()
 
         # Find the UI file
         try:
-            self.builder.add_from_file(UI_FILE1)
-            self.builder.get_object('image').set_from_file("CastA1.png")
-            self.builder.get_object('window').set_icon_from_file("IconCA.png")
+            self.builder.add_from_file(UI_MAIN_LOCAL)
         except:
-            self.builder.add_from_file(UI_FILE2)
-            self.builder.get_object('image')\
-                .set_from_file("/usr/local/share/castawesome/ui/CastA1.png")
-            self.builder.get_object('window').set_icon_from_file(
-                "/usr/local/share/castawesome/ui/IconCA.png"
-            )
+            self.builder.add_from_file(UI_MAIN_SHARED)
         self.builder.connect_signals(self)
 
-        window = self.builder.get_object('window')
+        window = self.builder.get_object('window_castawesome')
 
-        self.settings = Settings()
+        compression_list = [
+            ['ultrafast', 'Ultra Fast'],
+            ['superfast', 'Super Fast'],
+            ['veryfast', 'Very Fast'],
+            ['faster', 'Faster'],
+            ['fast', 'Fast'],
+            ['medium', 'Medium'],
+            ['slow', 'Slow'],
+            ['slower', 'Slower'],
+            ['veryslow', 'Very Slow'],
+        ]
+        for compression in compression_list:
+            self.builder.get_object("liststore_compression")\
+                .append(compression)
+
+        services = [
+            ['rtmp://live.twitch.tv/app/', 'Twitch.tv'],
+            ['rtmp://a.rtmp.youtube.com/live2/', 'YouTube'],
+            ['rtmp://live.hitbox.tv/push/', 'Hitbox.tv'],
+            ['rtmp://live.us.picarto.tv/golive/', "Picarto.tv"],
+            ['./', "Local File"],
+            ["none", "Custom"]
+        ]
+        for service in services:
+            self.builder.get_object("liststore_services").append(service)
+
+        for obj in [
+                "combobox_compression",
+                "combobox_service"]:
+            cell = Gtk.CellRendererText()
+            self.builder.get_object(obj).pack_start(cell, True)
+            self.builder.get_object(obj).add_attribute(cell, 'text', 1)
+
+        self.initialize_values()
 
         window.show_all()
 
@@ -74,6 +108,273 @@ class GUI:
 
         # Update timer every second
         GLib.timeout_add_seconds(1, self.update_timer)
+
+    def initialize_values(self):
+        # Initialize logo
+        try:
+            self.builder.add_from_file(ABOUT_UI_FILE_LOCAL)
+            self.builder.get_object('image_logo').set_from_file(IMAGE_LOGO)
+        except:
+            self.builder.add_from_file(ABOUT_UI_FILE_SHARED)
+            self.builder.get_object('image_logo')\
+                .set_from_file(SHARED_DIRECTORY + "ui/" + IMAGE_LOGO)
+        # Initialize the Screen tab.
+        screen = Gdk.Screen.get_default()
+        self.builder.get_object("adjustment_input_resolution_x")\
+            .set_upper(screen.get_width())
+        self.builder.get_object("adjustment_input_resolution_y")\
+            .set_upper(screen.get_height())
+        self.builder.get_object("adjustment_output_resolution_x")\
+            .set_upper(screen.get_width())
+        self.builder.get_object("adjustment_output_resolution_y")\
+            .set_upper(screen.get_height())
+        self.builder.get_object("adjustment_offset_x")\
+            .set_upper(screen.get_width())
+        self.builder.get_object("adjustment_offset_y")\
+            .set_upper(screen.get_height())
+        self.builder.get_object("adjustment_webcam_resolution_x")\
+            .set_upper(screen.get_width())
+        self.builder.get_object("adjustment_webcam_resolution_y")\
+            .set_upper(screen.get_height())
+        self.builder.get_object("spinbutton_input_resolution_x")\
+            .set_text(self.settings.inres.split('x')[0])
+        self.builder.get_object("spinbutton_input_resolution_y")\
+            .set_text(self.settings.inres.split('x')[1])
+        self.builder.get_object("spinbutton_output_resolution_x")\
+            .set_text(self.settings.outres.split('x')[0])
+        self.builder.get_object("spinbutton_output_resolution_y")\
+            .set_text(self.settings.outres.split('x')[1])
+        if self.settings.inres == self.settings.outres:
+            self.builder.get_object("checkbutton_output_same_as_input")\
+                .set_active(True)
+            self.builder.get_object("spinbutton_output_resolution_x")\
+                .set_sensitive(False)
+            self.builder.get_object("spinbutton_output_resolution_y")\
+                .set_sensitive(False)
+        self.builder.get_object("spinbutton_offset_x")\
+            .set_text(self.settings.x_offset)
+        self.builder.get_object("spinbutton_offset_y")\
+            .set_text(self.settings.y_offset)
+        self.builder.get_object("spinbutton_frames_per_second")\
+            .set_text(self.settings.fps)
+        self.builder.get_object("switch_show_capture_region")\
+            .set_active(self.settings.show_region)
+        # Initialize the Stream tab.
+        if self.settings.quality == "ultrafast":
+            self.builder.get_object("combobox_compression").set_active(0)
+        elif self.settings.quality == "superfast":
+            self.builder.get_object("combobox_compression").set_active(1)
+        elif self.settings.quality == "veryfast":
+            self.builder.get_object("combobox_compression").set_active(2)
+        elif self.settings.quality == "faster":
+            self.builder.get_object("combobox_compression").set_active(3)
+        elif self.settings.quality == "fast":
+            self.builder.get_object("combobox_compression").set_active(4)
+        elif self.settings.quality == "medium":
+            self.builder.get_object("combobox_compression").set_active(5)
+        elif self.settings.quality == "slow":
+            self.builder.get_object("combobox_compression").set_active(6)
+        elif self.settings.quality == "slower":
+            self.builder.get_object("combobox_compression").set_active(7)
+        elif self.settings.quality == "veryslow":
+            self.builder.get_object("combobox_compression").set_active(8)
+        if self.settings.service == 'rtmp://live.twitch.tv/app/':
+            self.builder.get_object("combobox_service").set_active(0)
+        elif self.settings.service == 'rtmp://a.rtmp.youtube.com/live2/':
+            self.builder.get_object("combobox_service").set_active(1)
+        elif self.settings.service == 'rtmp://live.hitbox.tv/push/':
+            self.builder.get_object("combobox_service").set_active(2)
+        elif self.settings.service == 'rtmp://live.us.picarto.tv/golive/':
+            self.builder.get_object("combobox_service").set_active(3)
+        elif self.settings.service == './':
+            self.builder.get_object("combobox_service").set_active(4)
+        else:
+            self.builder.get_object("combobox_service").set_active(5)
+        self.builder.get_object("entry_video_bitrate")\
+            .set_text(self.settings.bitrate)
+        advanced_options = get_advanced_options()
+        for key in ["video_container", "video_codec", "audio_codec"]:
+            lst = self.builder.get_object("liststore_" + key)
+            val = getattr(self.settings, key)
+            idx = 0
+            for item in advanced_options[key]:
+                name = item["name"]
+                lst.append([name])
+                if name == val:
+                    self.builder.get_object("combobox_" + key).set_active(idx)
+                idx += 1
+            cell = Gtk.CellRendererText()
+            self.builder.get_object("combobox_" + key).pack_start(cell, True)
+            self.builder.get_object("combobox_" + key)\
+                .add_attribute(cell, 'text', 0)
+        self.builder.get_object("entry_audio_bitrate")\
+            .set_text(self.settings.audio_bitrate)
+        self.builder.get_object("spinbutton_threads")\
+            .set_text(self.settings.threads)
+        self.builder.get_object("entry_service")\
+            .set_text(self.settings.service)
+        self.builder.get_object("adjustment_threads")\
+            .set_upper(multiprocessing.cpu_count())
+        # Initialize the Application tab.
+        self.builder.get_object("switch_run_application")\
+            .set_active(self.settings.run_application)
+        self.builder.get_object("entry_application")\
+            .set_text(self.settings.application)
+        # Initialize the Watermark tab.
+        self.builder.get_object("switch_watermark")\
+            .set_active(self.settings.watermark)
+        if self.settings.watermark:
+            self.builder.get_object("filechooserbutton_watermark_image")\
+                .set_filename(self.settings.watermark_file)
+            self.builder.get_object("image_watermark_image")\
+                .set_from_file(self.settings.watermark_file)
+            self.on_toggle_watermark_toggled(
+                self.builder.get_object("switch_watermark")
+            )
+        # Initialize the Webcam tab.
+        self.builder.get_object("switch_webcam")\
+            .set_active(self.settings.webcam)
+        self.builder.get_object("spinbutton_webcam_resolution_x")\
+            .set_text(self.settings.webcam_resolution.split('x')[0])
+        self.builder.get_object("spinbutton_webcam_resolution_y")\
+            .set_text(self.settings.webcam_resolution.split('x')[1])
+
+    def on_togglebutton_record_toggled(self, togglebutton):
+        if togglebutton.get_active():
+            togglebutton.set_sensitive(False)
+            self.builder.get_object("togglebutton_stop").set_sensitive(True)
+            self.builder.get_object("togglebutton_stop").set_active(False)
+            self.on_toggle_streaming_toggled(togglebutton)
+
+    def on_togglebutton_stop_toggled(self, togglebutton):
+        if togglebutton.get_active():
+            togglebutton.set_sensitive(False)
+            self.builder.get_object("togglebutton_record").set_sensitive(True)
+            self.builder.get_object("togglebutton_record").set_active(False)
+            self.on_toggle_streaming_toggled(togglebutton)
+
+    def on_toggle_input_resolution_link_toggled(self, togglebutton):
+        if togglebutton.get_active():
+            try:
+                self.builder.add_from_file(ABOUT_UI_FILE_LOCAL)
+                self.builder.get_object('image_input_resolution_link')\
+                    .set_from_file(IMAGE_CHAIN_CONNECTED)
+            except:
+                self.builder.add_from_file(ABOUT_UI_FILE_SHARED)
+                self.builder.get_object('image_input_resolution_link')\
+                    .set_from_file(
+                        SHARED_DIRECTORY + "ui/" + IMAGE_CHAIN_CONNECTED
+                    )
+            self.screen_input_resolution_ratio =\
+                int(self.builder.get_object("spinbutton_input_resolution_x")
+                    .get_text())\
+                /\
+                int(self.builder.get_object("spinbutton_input_resolution_y")
+                    .get_text())
+        else:
+            try:
+                self.builder.add_from_file(ABOUT_UI_FILE_LOCAL)
+                self.builder.get_object('image_input_resolution_link')\
+                    .set_from_file(IMAGE_CHAIN_BROKEN)
+            except:
+                self.builder.add_from_file(ABOUT_UI_FILE_SHARED)
+                self.builder.get_object('image_input_resolution_link')\
+                    .set_from_file(
+                        SHARED_DIRECTORY + "ui/" + IMAGE_CHAIN_BROKEN
+                    )
+            self.screen_input_resolution_ratio = None
+
+    def on_spinbutton_input_resolution_x_changed(self, spinbutton):
+        input_resolution_link = self.builder\
+            .get_object("toggle_input_resolution_link")
+        input_resolution_y = self.builder\
+            .get_object("spinbutton_input_resolution_y")
+        if input_resolution_link.get_active():
+            input_resolution_y.set_text(
+                str(int(int(spinbutton.get_text())
+                    / self.screen_input_resolution_ratio))
+            )
+        self.settings.inres = spinbutton.get_text() + 'x'\
+            + input_resolution_y.get_text()
+
+    def on_spinbutton_input_resolution_y_changed(self, spinbutton):
+        input_resolution_link = self.builder\
+            .get_object("toggle_input_resolution_link")
+        input_resolution_x = self.builder\
+            .get_object("spinbutton_input_resolution_x")
+        if input_resolution_link.get_active():
+            input_resolution_x.set_text(
+                str(int(int(spinbutton.get_text())
+                    * self.screen_input_resolution_ratio))
+            )
+        self.settings.inres = input_resolution_x.get_text() + 'x'\
+            + spinbutton.get_text()
+
+    def set_fullscreen(self, button):
+        screen = Gdk.Screen.get_default()
+        self.builder.get_object("spinbutton_input_resolution_x")\
+            .set_text(str(screen.get_width()))
+        self.builder.get_object("spinbutton_input_resolution_y")\
+            .set_text(str(screen.get_height()))
+        self.settings.inres = str(screen.get_width()) + 'x'\
+            + str(screen.get_width())
+
+    def on_toggle_output_resolution_link_toggled(self, togglebutton):
+        if togglebutton.get_active():
+            try:
+                self.builder.add_from_file(ABOUT_UI_FILE_LOCAL)
+                self.builder.get_object('image_output_resolution_link')\
+                    .set_from_file(IMAGE_CHAIN_CONNECTED)
+            except:
+                self.builder.add_from_file(ABOUT_UI_FILE_SHARED)
+                self.builder.get_object('image_output_resolution_link')\
+                    .set_from_file(
+                        SHARED_DIRECTORY + "ui/" + IMAGE_CHAIN_CONNECTED
+                    )
+            self.screen_output_resolution_ratio =\
+                int(self.builder.get_object("spinbutton_output_resolution_x")
+                    .get_text())\
+                /\
+                int(self.builder.get_object("spinbutton_output_resolution_y")
+                    .get_text())
+        else:
+            try:
+                self.builder.add_from_file(ABOUT_UI_FILE_LOCAL)
+                self.builder.get_object('image_output_resolution_link')\
+                    .set_from_file(IMAGE_CHAIN_BROKEN)
+            except:
+                self.builder.add_from_file(ABOUT_UI_FILE_SHARED)
+                self.builder.get_object('image_output_resolution_link')\
+                    .set_from_file(
+                        SHARED_DIRECTORY + "ui/" + IMAGE_CHAIN_BROKEN
+                    )
+            self.screen_output_resolution_ratio = None
+
+    def on_spinbutton_output_resolution_x_changed(self, spinbutton):
+        output_resolution_link = self.builder\
+            .get_object("toggle_output_resolution_link")
+        output_resolution_y = self.builder\
+            .get_object("spinbutton_output_resolution_y")
+        if output_resolution_link.get_active():
+            output_resolution_y.set_text(
+                str(int(int(spinbutton.get_text())
+                    / self.screen_output_resolution_ratio))
+            )
+        self.settings.outres = spinbutton.get_text() + 'x'\
+            + output_resolution_y.get_text()
+
+    def on_spinbutton_output_resolution_y_changed(self, spinbutton):
+        output_resolution_link = self.builder\
+            .get_object("toggle_output_resolution_link")
+        output_resolution_x = self.builder\
+            .get_object("spinbutton_output_resolution_x")
+        if output_resolution_link.get_active():
+            output_resolution_x.set_text(
+                str(int(int(spinbutton.get_text())
+                    * self.screen_output_resolution_ratio))
+            )
+        self.settings.outres = output_resolution_x.get_text() + 'x'\
+            + spinbutton.get_text()
 
     def on_toggle_streaming_toggled(self, window):
         # Are we streaming, or not?
@@ -90,76 +391,385 @@ class GUI:
         self.streaming = not self.streaming
         print ("Streaming: " + str(self.streaming))
 
-    def on_button_settings_clicked(self, window):
-        self.settings = Settings()
+    def on_output_same_as_input_toggled(self, checkbutton):
+        if checkbutton.get_active():
+            self.builder.get_object('spinbutton_output_resolution_x')\
+                .set_sensitive(False)
+            self.builder.get_object('spinbutton_output_resolution_x')\
+                .set_text(
+                    self.builder.get_object('spinbutton_input_resolution_x')
+                        .get_text()
+                )
+            self.builder.get_object('spinbutton_output_resolution_y')\
+                .set_sensitive(False)
+            self.builder.get_object('spinbutton_output_resolution_y')\
+                .set_text(
+                    self.builder.get_object('spinbutton_input_resolution_y')
+                        .get_text()
+                )
+        else:
+            self.builder.get_object('spinbutton_output_resolution_x')\
+                .set_sensitive(True)
+            self.builder.get_object('spinbutton_output_resolution_y')\
+                .set_sensitive(True)
 
-    def on_button_about_clicked(self, window):
-        self.about = About()
+    def on_offset_x_changed(self, spinbutton):
+        self.settings.x_offset = spinbutton.get_text()
+
+    def on_offset_y_changed(self, spinbutton):
+        self.settings.y_offset = spinbutton.get_text()
+
+    def on_offset_frames_per_second_changed(self, spinbutton):
+        self.settings.fps = spinbutton.get_text()
+
+    def on_toggle_show_capture_region_toggled(self, toggle):
+        self.settings.show_region = toggle.get_active()
+
+    def on_compression_changed(self, combobox):
+        model = combobox.get_model()
+        active = combobox.get_active()
+        if active >= 0:
+            self.settings.quality = model[active][0]
+
+    def on_video_bitrate_changed(self, entry):
+        self.settings.bitrate = entry.get_text()
+
+    def on_video_container_changed(self, combobox):
+        model = combobox.get_model()
+        active = combobox.get_active()
+        if active >= 0:
+            self.settings.video_container = model[active][0]
+
+    def on_video_codec_changed(self, combobox):
+        model = combobox.get_model()
+        active = combobox.get_active()
+        if active >= 0:
+            self.settings.video_codec = model[active][0]
+
+    def on_audio_bitrate_changed(self, entry):
+        self.settings.audio_bitrate = entry.get_text()
+
+    def on_audio_codec_changed(self, combobox):
+        model = combobox.get_model()
+        active = combobox.get_active()
+        if active >= 0:
+            self.settings.audio_codec = model[active][0]
+
+    def on_threads_value_changed(self, spinbutton):
+        self.settings.threads = spinbutton.get_text()
+
+    def on_service_changed(self, combobox):
+        model = self.builder.get_object("combobox_service").get_model()
+        active = self.builder.get_object("combobox_service").get_active()
+        if active >= 0:
+            self.settings.service = model[active][0]
+            self.builder.get_object("entry_service")\
+                .set_text(self.settings.service)
+            if active == 5:
+                self.builder.get_object("entry_service").set_sensitive(True)
+                self.builder.get_object("entry_service").set_text("rtmp://")
+            else:
+                self.builder.get_object("entry_service").set_sensitive(False)
+
+    def on_key_edit_toggled(self, entry):
+        if entry.get_active():
+            self.builder.get_object("entry_key").set_text(self.stream_key.key)
+            self.builder.get_object("entry_key").set_sensitive(True)
+        else:
+            self.stream_key.key = self.builder.get_object("entry_key")\
+                .get_text()
+            self.builder.get_object("entry_key").set_text('')
+            self.builder.get_object("entry_key").set_sensitive(False)
+
+    def on_key_changed(self, entry):
+        if entry.get_text() != '':
+            self.stream_key.key = entry.get_text()
+
+    def on_toggle_run_application_toggled(self, toggle):
+        self.settings.run_application = toggle.get_active()
+        self.builder.get_object("entry_application")\
+            .set_sensitive(toggle.get_active())
+
+    def on_application_changed(self, entry):
+        self.settings.application = entry.get_text()
+
+    def on_toggle_watermark_toggled(self, toggle):
+        self.settings.watermark = toggle.get_active()
+        self.builder.get_object("filechooserbutton_watermark_image")\
+            .set_sensitive(toggle.get_active())
+        self.builder.get_object("image_watermark_image")\
+            .set_sensitive(toggle.get_active())
+        if toggle.get_active():
+            self.builder.get_object("image_watermark_image")\
+                .set_opacity(1)
+        else:
+            self.builder.get_object("image_watermark_image")\
+                .set_opacity(.25)
+
+    def on_watermark_image_file_set(self, file_chooser):
+        self.settings.watermark_file = file_chooser.get_filename()
+        self.builder.get_object("image_watermark_image")\
+            .set_from_file(self.settings.watermark_file)
+
+    def on_toggle_webcam_toggled(self, toggle):
+        self.settings.webcam = toggle.get_active()
+        if toggle.get_active():
+            self.initialize_webcam_position()
+            self.builder.get_object("togglebutton_webcam_top_left")\
+                .set_sensitive(True)
+            self.builder.get_object("togglebutton_webcam_top_center")\
+                .set_sensitive(True)
+            self.builder.get_object("togglebutton_webcam_top_right")\
+                .set_sensitive(True)
+            self.builder.get_object("togglebutton_webcam_center_left")\
+                .set_sensitive(True)
+            self.builder.get_object("togglebutton_webcam_center_center")\
+                .set_sensitive(True)
+            self.builder.get_object("togglebutton_webcam_center_right")\
+                .set_sensitive(True)
+            self.builder.get_object("togglebutton_webcam_bottom_left")\
+                .set_sensitive(True)
+            self.builder.get_object("togglebutton_webcam_bottom_center")\
+                .set_sensitive(True)
+            self.builder.get_object("togglebutton_webcam_bottom_right")\
+                .set_sensitive(True)
+            self.builder.get_object("label_webcam_resolution")\
+                .set_sensitive(True)
+            self.builder.get_object("spinbutton_webcam_resolution_x")\
+                .set_sensitive(True)
+            self.builder.get_object("spinbutton_webcam_resolution_y")\
+                .set_sensitive(True)
+            self.builder.get_object("togglebutton_webcam_resolution_link")\
+                .set_sensitive(True)
+            self.builder.get_object("image_webcam_resolution_link")\
+                .set_sensitive(True)
+        else:
+            self.builder.get_object("togglebutton_webcam_top_left")\
+                .set_sensitive(False)
+            self.builder.get_object("togglebutton_webcam_top_center")\
+                .set_sensitive(False)
+            self.builder.get_object("togglebutton_webcam_top_right")\
+                .set_sensitive(False)
+            self.builder.get_object("togglebutton_webcam_center_left")\
+                .set_sensitive(False)
+            self.builder.get_object("togglebutton_webcam_center_center")\
+                .set_sensitive(False)
+            self.builder.get_object("togglebutton_webcam_center_right")\
+                .set_sensitive(False)
+            self.builder.get_object("togglebutton_webcam_bottom_left")\
+                .set_sensitive(False)
+            self.builder.get_object("togglebutton_webcam_bottom_center")\
+                .set_sensitive(False)
+            self.builder.get_object("togglebutton_webcam_bottom_right")\
+                .set_sensitive(False)
+            self.builder.get_object("label_webcam_resolution")\
+                .set_sensitive(False)
+            self.builder.get_object("spinbutton_webcam_resolution_x")\
+                .set_sensitive(False)
+            self.builder.get_object("spinbutton_webcam_resolution_y")\
+                .set_sensitive(False)
+            self.builder.get_object("togglebutton_webcam_resolution_link")\
+                .set_sensitive(False)
+            self.builder.get_object("image_webcam_resolution_link")\
+                .set_sensitive(False)
+
+    def initialize_webcam_position(self):
+        self.builder.get_object("togglebutton_webcam_top_left")\
+            .set_active(False)
+        self.builder.get_object("togglebutton_webcam_top_center")\
+            .set_active(False)
+        self.builder.get_object("togglebutton_webcam_top_right")\
+            .set_active(False)
+        self.builder.get_object("togglebutton_webcam_center_left")\
+            .set_active(False)
+        self.builder.get_object("togglebutton_webcam_center_center")\
+            .set_active(False)
+        self.builder.get_object("togglebutton_webcam_center_right")\
+            .set_active(False)
+        self.builder.get_object("togglebutton_webcam_bottom_left")\
+            .set_active(False)
+        self.builder.get_object("togglebutton_webcam_bottom_center")\
+            .set_active(False)
+        self.builder.get_object("togglebutton_webcam_bottom_right")\
+            .set_active(False)
+        if self.settings.webcam_placement == "0:0":
+            self.builder.get_object("togglebutton_webcam_top_left")\
+                .set_active(True)
+        elif self.settings.webcam_placement == "main_w/2-w/2:0":
+            self.builder.get_object("togglebutton_webcam_top_center")\
+                .set_active(True)
+        elif self.settings.webcam_placement == "main_w-w:0":
+            self.builder.get_object("togglebutton_webcam_top_right")\
+                .set_active(True)
+        elif self.settings.webcam_placement == "0:main_h/2-h/2":
+            self.builder.get_object("togglebutton_webcam_center_left")\
+                .set_active(True)
+        elif self.settings.webcam_placement == "main_w/2-w/2:main_h/2-h/2":
+            self.builder.get_object("togglebutton_webcam_center_center")\
+                .set_active(True)
+        elif self.settings.webcam_placement == "main_w-w:main_h/2-h/2":
+            self.builder.get_object("togglebutton_webcam_center_right")\
+                .set_active(True)
+        elif self.settings.webcam_placement == "0:main_h-h":
+            self.builder.get_object("togglebutton_webcam_bottom_left")\
+                .set_active(True)
+        elif self.settings.webcam_placement == "main_w/2-w/2:main_h-h":
+            self.builder.get_object("togglebutton_webcam_bottom_center")\
+                .set_active(True)
+        elif self.settings.webcam_placement == "main_w-w:main_h-h":
+            self.builder.get_object("togglebutton_webcam_bottom_right")\
+                .set_active(True)
+
+    def on_webcam_position_changed(self, togglebutton):
+        if togglebutton.get_active() and not self.webcam_button_lock:
+            self.webcam_button_lock = True
+            if togglebutton.get_property('name')\
+                    == 'togglebutton_webcam_top_left':
+                self.settings.webcam_placement = "0:0"
+            elif togglebutton.get_property('name')\
+                    == 'togglebutton_webcam_top_center':
+                self.settings.webcam_placement = "main_w/2-w/2:0"
+            elif togglebutton.get_property('name')\
+                    == 'togglebutton_webcam_top_right':
+                self.settings.webcam_placement = "main_w-w:0"
+            elif togglebutton.get_property('name')\
+                    == 'togglebutton_webcam_center_left':
+                self.settings.webcam_placement = "0:main_h/2-h/2"
+            elif togglebutton.get_property('name')\
+                    == 'togglebutton_webcam_center_center':
+                self.settings.webcam_placement = "main_w/2-w/2:main_h/2-h/2"
+            elif togglebutton.get_property('name')\
+                    == 'togglebutton_webcam_center_right':
+                self.settings.webcam_placement = "main_w-w:main_h/2-h/2"
+            elif togglebutton.get_property('name')\
+                    == 'togglebutton_webcam_bottom_left':
+                self.settings.webcam_placement = "0:main_h-h"
+            elif togglebutton.get_property('name')\
+                    == 'togglebutton_webcam_bottom_center':
+                self.settings.webcam_placement = "main_w/2-w/2:main_h-h"
+            elif togglebutton.get_property('name')\
+                    == 'togglebutton_webcam_bottom_right':
+                self.settings.webcam_placement = "main_w-w:main_h-h"
+            self.initialize_webcam_position()
+            self.webcam_button_lock = False
+
+    def on_toggle_webcam_resolution_link_toggled(self, togglebutton):
+        if togglebutton.get_active():
+            try:
+                self.builder.add_from_file(ABOUT_UI_FILE_LOCAL)
+                self.builder.get_object('image_webcam_resolution_link')\
+                    .set_from_file(IMAGE_CHAIN_CONNECTED)
+            except:
+                self.builder.add_from_file(ABOUT_UI_FILE_SHARED)
+                self.builder.get_object('image_webcam_resolution_link')\
+                    .set_from_file(
+                        SHARED_DIRECTORY + "ui/" + IMAGE_CHAIN_CONNECTED
+                    )
+            self.webcam_resolution_ratio =\
+                int(self.builder.get_object("spinbutton_webcam_resolution_x")
+                    .get_text())\
+                /\
+                int(self.builder.get_object("spinbutton_webcam_resolution_y")
+                    .get_text())
+        else:
+            try:
+                self.builder.add_from_file(ABOUT_UI_FILE_LOCAL)
+                self.builder.get_object('image_webcam_resolution_link')\
+                    .set_from_file(IMAGE_CHAIN_BROKEN)
+            except:
+                self.builder.add_from_file(ABOUT_UI_FILE_SHARED)
+                self.builder.get_object('image_webcam_resolution_link')\
+                    .set_from_file(
+                        SHARED_DIRECTORY + "ui/" + IMAGE_CHAIN_BROKEN
+                    )
+            self.webcam_resolution_ratio = None
+
+    def on_spinbutton_webcam_resolution_x_changed(self, spinbutton):
+        webcam_resolution_link = self.builder\
+            .get_object("togglebutton_webcam_resolution_link")
+        webcam_resolution_y = self.builder\
+            .get_object("spinbutton_webcam_resolution_y")
+        if webcam_resolution_link.get_active():
+            webcam_resolution_y.set_text(
+                str(int(int(spinbutton.get_text())
+                    / self.webcam_resolution_ratio))
+            )
+        self.settings.webcam_resolution = spinbutton.get_text() + 'x'\
+            + webcam_resolution_y.get_text()
+
+    def on_spinbutton_webcam_resolution_y_changed(self, spinbutton):
+        webcam_resolution_link = self.builder\
+            .get_object("togglebutton_webcam_resolution_link")
+        webcam_resolution_x = self.builder\
+            .get_object("spinbutton_webcam_resolution_x")
+        if webcam_resolution_link.get_active():
+            webcam_resolution_x.set_text(
+                str(int(int(spinbutton.get_text())
+                    * self.webcam_resolution_ratio))
+            )
+        self.settings.webcam_resolution = webcam_resolution_x.get_text() + 'x'\
+            + spinbutton.get_text()
+
+    def on_save_settings_clicked(self, button):
+        self.settings.save()
+        self.stream_key.save()
+
+    def on_about_clicked(self, button):
+        About()
 
     def stream(self):
-        # Twitch key needs to be read to stream video
-        with open(
-            os.path.join(home, ".config/castawesome/.twitch_key"),
-            "r"
-        ) as fob:
-            twitch_key = fob.read()
-
         # Decide whether to enable visible screen regions
-        if self.settings.get_show_region():
+        if self.settings.show_region:
             show_region = "1"
         else:
             show_region = "0"
 
         # Avconv is supplied with user's settings and executed
         parameters = {
-            "inres": self.settings.get_inres(),
-            "outres": self.settings.get_outres(),
-            "x_offset": self.settings.get_x_offset(),
-            "y_offset": self.settings.get_y_offset(),
-            "fps": self.settings.get_fps(),
-            "quality": self.settings.get_quality(),
-            "bitrate": self.settings.get_bitrate(),
-            "threads": self.settings.get_threads(),
+            "inres": self.settings.inres,
+            "outres": self.settings.outres,
+            "x_offset": self.settings.x_offset,
+            "y_offset": self.settings.y_offset,
+            "fps": self.settings.fps,
+            "quality": self.settings.quality,
+            "bitrate": self.settings.bitrate,
+            "threads": self.settings.threads,
             "show_region": show_region,
-            "service": self.settings.get_service(),
+            "service": self.settings.service,
             "watermark": '-vf "movie=%(watermark_file)s [watermark]; '
             + '[in][watermark] overlay=0:0 [out]"'
-            % {"watermark_file": self.settings.get_watermark_file()},
-            "watermark_file": self.settings.get_watermark_file(),
-            "web_placement": self.settings.get_webcam_placement(),
-            "web_resolution": self.settings.get_webcam_resolution(),
-            "audio_bitrate": self.settings.get_audio_bitrate(),
-            "video_container": self.settings.get_video_container(),
-            "video_codec": self.settings.get_video_codec(),
-            "audio_codec": self.settings.get_audio_codec()
+            % {"watermark_file": self.settings.watermark_file},
+            "watermark_file": self.settings.watermark_file,
+            "web_placement": self.settings.webcam_placement,
+            "web_resolution": self.settings.webcam_resolution,
+            "audio_bitrate": self.settings.audio_bitrate,
+            "video_container": self.settings.video_container,
+            "video_codec": self.settings.video_codec,
+            "audio_codec": self.settings.audio_codec
         }
-
         parameters["keyint"] = str(int(parameters["fps"]) * 2)
-        print (parameters["keyint"])
-
         # Decide which avconv/avconv command to use based on the settings
         filter_complex = ''
-        if self.settings.get_webcam() and self.settings.get_watermark():
+        if self.settings.webcam and self.settings.watermark:
             filter_complex = "-filter_complex 'setpts=PTS-STARTPTS[bg]; "\
                 "setpts=PTS-STARTPTS[fg]; "\
                 "[bg][fg]overlay=%(web_placement)s[bg2]; "\
                 "[bg2]overlay=0:main_h-overlay_h-0,format=yuv420p[out]' "\
                 "-map '[out]' "
-        elif self.settings.get_webcam():
+        elif self.settings.webcam:
             filter_complex = "-filter_complex 'overlay=0:main_h-overlay_h-0' "
-        elif self.settings.get_watermark():
+        elif self.settings.watermark:
             filter_complex = "-filter_complex "\
                 "'overlay=%(web_placement)s,format=yuv420p[out]' -map '[out]' "
         command = \
             'avconv -f x11grab -show_region %(show_region)s -s %(inres)s '\
             + '-framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s '
-        if self.settings.get_webcam():
+        if self.settings.webcam:
             command = command + \
                 '-f video4linux2 -video_size %(web_resolution)s '\
                 '-framerate %(fps)s -i /dev/video0 '
-        if self.settings.get_watermark():
+        if self.settings.watermark:
             command = command + '-i %(watermark_file)s '
-        print (twitch_key)
         command = str(
             command
             + '-f pulse -ac 1 -i default -vcodec %(video_codec)s '
@@ -168,25 +778,38 @@ class GUI:
             + '-ar 44100 -threads %(threads)s -qscale 3 '
             + '-b:a %(audio_bitrate)s -b:v %(bitrate)s -minrate %(bitrate)s '
             + '-g %(keyint)s -pix_fmt yuv420p '
-            + '-f %(video_container)s "%(service)s' + twitch_key + '"'
+            + '-f %(video_container)s "%(service)s' + self.stream_key.key + '"'
         ) % parameters
-        print (command)
+        if self.settings.run_application:
+            self.application_process = subprocess.Popen(
+                self.settings.application,
+                stdout=subprocess.PIPE,
+                shell=True
+            )
+        print (command.replace(self.stream_key.key, '<_stream_key_>'))
         # Start a subprocess to handle avconv
-        self.process = subprocess.Popen(command, shell=True)
-        # os.system(command + " &")
+        self.process = subprocess.Popen(
+            command,
+            shell=True,
+            stdout=subprocess.PIPE
+        )
 
     def update_timer(self):
         # Just minute/second counter, nothing fancy here
         if self.streaming:
             self.counter_sec += 1
-            if(self.counter_sec == 60):
+            if self.counter_sec == 60:
                 self.counter_min += 1
                 self.counter_sec = 0
 
-            label = self.builder.get_object("label_timer")
+            label = self.builder.get_object("label_record_status")
             label.set_text(
-                "Time: " + str(self.counter_min) + ":" + str(self.counter_sec)
+                "Time: %02d:%02d" % (self.counter_min, self.counter_sec)
             )
+            if self.settings.run_application\
+                    and self.application_process is not None\
+                    and self.application_process.poll() is not None:
+                self.builder.get_object("togglebutton_stop").set_active(True)
         else:
             self.counter_min = 0
             self.counter_sec = 0
@@ -219,28 +842,47 @@ def get_advanced_options():
         if match:
             props, name, desc = match.group(1, 2, 3)
             if b'E' in props:  # only formats that we can actually encode
-                options["video_container"].append({"name": name.decode('utf-8'), "desc": desc.decode('utf-8')})
+                options["video_container"]\
+                    .append({
+                        "name": name.decode('utf-8'),
+                        "desc": desc.decode('utf-8')
+                    })
+    options["video_container"] = sorted(
+        options["video_container"],
+        key=operator.itemgetter("name")
+    )
 
     # make avconv list decoders
     for line in subprocess.check_output(["avconv", "-decoders"]).splitlines():
         match = re.match(
             b"""
-            \s*      # maybe leading whitespace
-            (.{4})   # decoder properties
-            \s+      # whitespace
-            ([\w-]+) # decoder name, like `h264`
-            \s+      # whitespace
-            (.+)     # decoder description""",
+            \s*            # maybe leading whitespace
+            ([.VASFXBD]+)  # decoder properties
+            \s+            # whitespace
+            ([\w-]+)       # decoder name, like `h264`
+            \s+            # whitespace
+            (.+)           # decoder description""",
             line,
             re.X
         )
         if match:
             props, name, desc = match.group(1, 2, 3)
-            decoder = {"name": name.decode('utf-8'), "desc": desc.decode('utf-8')}
+            decoder = {
+                "name": name.decode('utf-8'),
+                "desc": desc.decode('utf-8')
+            }
             if b'V' in props:  # video codec
                 options["video_codec"].append(decoder)
             if b'A' in props:  # audio codec
                 options["audio_codec"].append(decoder)
+    options["video_codec"] = sorted(
+        options["video_codec"],
+        key=operator.itemgetter("name")
+    )
+    options["audio_codec"] = sorted(
+        options["audio_codec"],
+        key=operator.itemgetter("name")
+    )
 
     return options
 
@@ -257,401 +899,96 @@ class Settings:
     audio_bitrate = "128k"            # <TODO>
     threads = "1"                    # Amount of threads
     show_region = "0"                # Show or don't show capture region
-    advanced = False
     video_container = "flv"            # <TODO>
     video_codec = "h264"            # <TODO>
     audio_codec = "mp3"                # <TODO>
+    run_application = False
+    application = ""
     watermark = False                # Enable/Disable watermarking
     watermark_file = ""                # Filename of the watermark
     webcam = False                    # Enable/Disable webcam
     webcam_placement = "0:0"        # Placement of the webcam overlay
     webcam_resolution = "320x200"    # Resolution of the webcam
     service = "rtmp://live.twitch.tv/app/"    # The streaming service in use
-    advanced_options = get_advanced_options()
 
-    def __init__(self):
+    def __init__(self, builder):
         try:
-            try:
-                os.mkdir(os.path.join(home, ".config/castawesome"))
-                # Configuration files are missing, create them and add defaults
-                os.system("touch ~/.config/castawesome/.twitch_key")
-                os.chmod(
-                    os.path.join(home, ".config/castawesome/.twitch_key"),
-                    0o600
-                )
+            if not os.path.isdir(os.path.join(home, CONFIG_DIRECTORY)):
+                os.mkdir(os.path.join(home, CONFIG_DIRECTORY))
+                self.save()
+            elif not os.path.isfile(os.path.join(home, CONFIG_FILE)):
+                self.save()
 
-                # Default settings for the user
-                with open(
-                    os.path.join(home, ".config/castawesome/config.txt"),
-                    "w"
-                ) as fob:
-                    fob.write("""{
-    "inres": "1280x720",\n
-    "outres": "1280x720",\n
-    "x_offset": "0",\n
-    "y_offset": "0",\n
-    "fps": "30",\n
-    "quality": "medium",\n
-    "bitrate": "500k",\n
-    "audio_bitrate": "128k",\n
-    "advanced_settings" : "False",\n
-    "video_container": "flv",\n
-    "video_codec": "h264",\n
-    "audio_codec": "mp3",\n
-    "threads": "1",\n
-    "show_region": "0",\n
-    "use_watermark" : "False",\n
-    "use_webcam" : "False",\n
-    "webcam_placement" : "0:0",\n
-    "webcam_resolution" : "320x200",\n
-    "service": "rtmp://live.twitch.tv/app/"\n
-}""")
-            except:
-                print ("Config files exist...")
+            self.load_configuration_file()
 
-            with open(
-                os.path.join(home, ".config/castawesome/.twitch_key"),
-                "r"
-            ) as fob:
-                key = fob.read()
-
-            if key == "":
-                warning = StreamKey()
-
-            with open(
-                os.path.join(home, ".config/castawesome/config.txt"),
-                "r"
-            ) as fob:
-                lines = fob.read()
-
-            # What if user has legacy config files?
-            if "{" not in lines[0]:
-                print ("Using legacy config loader...")
-                self.load_legacy_config()
-            else:
-                lines = json.loads(lines)
-                print (lines)
-
-                self.inres = lines["inres"]
-                self.outres = lines["outres"]
-                self.x_offset = lines["x_offset"]
-                self.y_offset = lines["y_offset"]
-                self.fps = lines["fps"]
-                self.quality = lines["quality"]
-                self.bitrate = lines["bitrate"]
-                if lines["advanced_settings"] == "False":
-                    self.advanced = False
-                else:
-                    self.advanced = True
-                self.audio_bitrate = lines["audio_bitrate"]
-                self.video_container = lines["video_container"]
-                self.video_codec = lines["video_codec"]
-                self.audio_codec = lines["audio_codec"]
-                self.threads = lines["threads"]
-                if lines["show_region"] == "False":
-                    self.show_region = False
-                else:
-                    self.show_region = True
-                try:
-                    self.service = lines["service"]
-                except:
-                    self.service = "none"
-                if lines["use_watermark"] == "True":
-                    self.watermark = True
-                else:
-                    self.watermark = False
-                try:
-                    self.watermark_file = lines["watermark_file"]
-                except:
-                    ""
-                try:
-                    if lines["use_webcam"] == "True":
-                        self.webcam = True
-                    else:
-                        self.webcam = False
-                except:
-                    self.webcam = False
-                try:
-                    self.webcam_placement = lines["webcam_placement"]
-                    self.webcam_resolution = lines["webcam_resolution"]
-                except:
-                    self.webcam_placement = "0:0"
-                    self.webcam_resolution = "320x200"
         except:
             print ("An error occured: " + str(sys.exc_info()))
-            print ("Couldn't load config files!")
-        try:
-            self.builder = Gtk.Builder()
-            self.builder.add_from_file(SETUP_UI_FILE1)
-            print ("Loaded " + SETUP_UI_FILE1)
-        except:
-            self.builder.add_from_file(SETUP_UI_FILE2)
-            print ("Loaded " + SETUP_UI_FILE2)
-        self.builder.connect_signals(self)
+            print ("Couldn't load config file!")
 
-        window = self.builder.get_object("settings")
-        self.builder.get_object("entry_inres").set_text(self.inres)
-        self.builder.get_object("entry_outres").set_text(self.outres)
-        self.builder.get_object("entry_xoffset").set_text(self.x_offset)
-        self.builder.get_object("entry_yoffset").set_text(self.y_offset)
-        self.builder.get_object("entry_fps").set_text(self.fps)
-        self.builder.get_object("entry_bitrate").set_text(self.bitrate)
-        self.builder.get_object("entry_audio_bitrate")\
-            .set_text(self.audio_bitrate)
-        self.builder.get_object("entry_threads").set_text(self.threads)
-
-        # Set the capture_region switch to the correct state
-        self.builder.get_object("switch_capture_region")\
-            .set_active(self.show_region)
-
-        self.builder.get_object("switch_advanced_settings")\
-            .set_active(self.advanced)
-
-        # If watermarking has been enabled, set the filenames and switches
-        if self.watermark:
-            self.builder.get_object("switch_watermark")\
-                .set_active(self.watermark)
-            self.builder.get_object("filechooserbutton_watermark")\
-                .set_filename(self.watermark_file)
-
-        # Set the webcam toggle status
-        print ("Webcam: " + str(self.webcam))
-        self.builder.get_object("switch_enable_webcam").set_active(self.webcam)
-
-        # Various "models" for service and preset lists
-        services = [
-            ['rtmp://live.twitch.tv/app/', 'Twitch.tv'],
-            ['rtmp://a.rtmp.youtube.com/live2/', 'YouTube'],
-            ['rtmp://live.hitbox.tv/push/', 'Hitbox.tv'],
-            ['rtmp://live.us.picarto.tv/golive/', "Picarto.tv"],
-            ['./', "Local File"],
-            ["none", "Custom"]
-        ]
-
-        presets = [
-            ['ultrafast', 'ultrafast'],
-            ['superfast', 'superfast'],
-            ['veryfast', 'veryfast'],
-            ['faster', 'faster'],
-            ['fast', 'fast'],
-            ['medium', 'medium'],
-            ['slow', 'slow'],
-            ['slower', 'slower'],
-            ['veryslow', 'veryslow'],
-        ]
-
-        # Append services and presets to the GTK's liststores
-        for item in services:
-            self.builder.get_object("list_services").append(item)
-        for otheritem in presets:
-            self.builder.get_object("list_presets").append(otheritem)
-
-        # Append advanced options to GTK's liststores
-        for key in ["video_container", "video_codec", "audio_codec"]:
-            lst = self.builder.get_object("list_" + key)
-            print('list', lst)
-            val = getattr(self, "get_" + key)()
-            idx = 0
-            for item in self.advanced_options[key]:
-                name = item["name"]
-                print('name', name)
-                lst.append([name])
-                if name == val:
-                    self.builder.get_object("combo_" + key).set_active(idx)
-                idx += 1
-
-        # Stupid hack for GTK's weirdness
-        for obj in [
-                "combo_preset_selector",
-                "combo_video_container",
-                "combo_video_codec",
-                "combo_audio_codec"]:
-            cell = Gtk.CellRendererText()
-            self.builder.get_object(obj).pack_start(cell, True)
-            self.builder.get_object(obj).add_attribute(cell, 'text', 0)
-
-        # Set the service selector based on the loaded configs
-        if self.service == 'rtmp://live.twitch.tv/app/':
-            self.builder.get_object("combo_service_selector").set_active(0)
-        elif self.service == 'rtmp://a.rtmp.youtube.com/live2/':
-            self.builder.get_object("combo_service_selector").set_active(1)
-        elif self.service == 'rtmp://live.hitbox.tv/push/':
-            self.builder.get_object("combo_service_selector").set_active(2)
-        elif self.service == 'rtmp://live.us.picarto.tv/golive/':
-            self.builder.get_object("combo_service_selector").set_active(3)
-        elif self.service == './':
-            self.builder.get_object("combo_service_selector").set_active(4)
-        else:
-            self.builder.get_object("combo_service_selector").set_active(5)
-
-        # Do the same to quality (compression) presets
-        if self.quality == "ultrafast":
-            self.builder.get_object("combo_preset_selector").set_active(0)
-        elif self.quality == "superfast":
-            self.builder.get_object("combo_preset_selector").set_active(1)
-        elif self.quality == "veryfast":
-            self.builder.get_object("combo_preset_selector").set_active(2)
-        elif self.quality == "faster":
-            self.builder.get_object("combo_preset_selector").set_active(3)
-        elif self.quality == "fast":
-            self.builder.get_object("combo_preset_selector").set_active(4)
-        elif self.quality == "medium":
-            self.builder.get_object("combo_preset_selector").set_active(5)
-        elif self.quality == "slow":
-            self.builder.get_object("combo_preset_selector").set_active(6)
-        elif self.quality == "slower":
-            self.builder.get_object("combo_preset_selector").set_active(7)
-        elif self.quality == "veryslow":
-            self.builder.get_object("combo_preset_selector").set_active(8)
-
-        # Apply previous configs
-        self.on_button_apply_clicked(0)
-
-        window.show_all()
-
-        # If watermarking is disabled, hide the watermarking options
-        if self.watermark is False:
-            self.builder.get_object("box_watermarking").hide()
-
-        if self.advanced is False:
-            self.builder.get_object("box_advanced").hide()
-
-# All the getters, one for each value
-    def get_inres(self):
-        return self.inres
-
-    def get_outres(self):
-        return self.outres
-
-    def get_x_offset(self):
-        return self.x_offset
-
-    def get_y_offset(self):
-        return self.y_offset
-
-    def get_fps(self):
-        return self.fps
-
-    def get_quality(self):
-        return self.quality
-
-    def get_bitrate(self):
-        return self.bitrate
-
-    def get_audio_bitrate(self):
-        return self.audio_bitrate
-
-    def get_video_container(self):
-        return self.video_container
-
-    def get_video_codec(self):
-        return self.video_codec
-
-    def get_audio_codec(self):
-        return self.audio_codec
-
-    def get_threads(self):
-        return self.threads
-
-    def get_show_region(self):
-        return self.show_region
-
-    def get_watermark(self):
-        return self.watermark
-
-    def get_watermark_file(self):
-        return self.watermark_file
-
-    def get_webcam(self):
-        return self.webcam
-
-    def get_webcam_placement(self):
-        return self.webcam_placement
-
-    def get_webcam_resolution(self):
-        return self.webcam_resolution
-
-    def get_service(self):
-        return self.service
-
-# Event handlers
-    def on_button_fullscreen_clicked(self, window):
-        screen = Gdk.Screen.get_default()
-        self.builder.get_object("entry_inres").set_text(
-            (str)(screen.get_width()) + 'x' + (str)(screen.get_height())
-        )
-        self.inres = self.builder.get_object("entry_inres").get_text()
-
-    def on_combo_preset_selector_changed(self, widget):
-        model = self.builder.get_object("combo_preset_selector").get_model()
-        active = self.builder.get_object("combo_preset_selector").get_active()
-        if active >= 0:
-            self.quality = model[active][0]
-
-    def on_combo_service_selector_changed(self, widget):
-        model = self.builder.get_object("combo_service_selector").get_model()
-        active = self.builder.get_object("combo_service_selector").get_active()
-        if active >= 0:
-            self.service = model[active][0]
-        print (self.service)
-
-    def on_filechooserbutton_watermark_file_set(self, widget):
-        self.watermark_file = widget.get_filename()
-
-    def on_toggle_capture_region_toggled(self, widget):
-        self.show_region = widget.get_active()
-
-        print (self.show_region)
-
-    def on_toggle_webcam_toggled(self, widget):
-        self.webcam = widget.get_active()
-
-        if self.webcam:
-            self.builder.get_object("box_webcam").show()
-        else:
-            self.builder.get_object("box_webcam").hide()
-
-        print (self.webcam)
-
-    def on_toggle_watermarking_toggled(self, widget):
-        self.watermark = widget.get_active()
-
-        if self.watermark:
-            self.builder.get_object("box_watermarking").show()
-        else:
-            self.builder.get_object("box_watermarking").hide()
-        print (self.watermark)
-
-    def on_toggle_advanced_toggled(self, widget):
-        self.advanced = widget.get_active()
-
-        if self.advanced:
-            self.builder.get_object("box_advanced").show()
-        else:
-            self.builder.get_object("box_advanced").hide()
-        print (self.advanced)
-
-    def on_advanced_option_changed(self, widget):
-        key = Gtk.Buildable.get_name(widget)[len("combo_"):]
-        active = widget.get_active()
-        if active >= 0:
-            setattr(self, key, widget.get_model()[active][0])
-        print ("{0}: {1}".format(key, getattr(self, "get_" + key)()))
-
-    def on_button_apply_clicked(self, window):
-        self.inres = self.builder.get_object("entry_inres").get_text()
-        self.outres = self.builder.get_object("entry_outres").get_text()
-        self.x_offset = self.builder.get_object("entry_xoffset").get_text()
-        self.y_offset = self.builder.get_object("entry_yoffset").get_text()
-        self.fps = self.builder.get_object("entry_fps").get_text()
-        self.bitrate = self.builder.get_object("entry_bitrate").get_text()
-        self.audio_bitrate = self.builder.get_object("entry_audio_bitrate")\
-            .get_text()
-        self.threads = self.builder.get_object("entry_threads").get_text()
-
-        # Save configs in homefolder
+    def load_configuration_file(self):
         with open(
-            os.path.join(home, ".config/castawesome/config.txt"),
+            os.path.join(home, CONFIG_FILE),
+            "r"
+        ) as fob:
+            lines = fob.read()
+
+        # What if user has legacy config files?
+        if "{" not in lines[0]:
+            print ("Using legacy config loader...")
+            self.load_legacy_config()
+        else:
+            lines = json.loads(lines)
+
+            self.inres = lines["inres"]
+            self.outres = lines["outres"]
+            self.x_offset = lines["x_offset"]
+            self.y_offset = lines["y_offset"]
+            self.fps = lines["fps"]
+            self.quality = lines["quality"]
+            self.bitrate = lines["bitrate"]
+            self.audio_bitrate = lines["audio_bitrate"]
+            self.video_container = lines["video_container"]
+            self.video_codec = lines["video_codec"]
+            self.audio_codec = lines["audio_codec"]
+            if lines["run_application"] == "False":
+                self.run_application = False
+            else:
+                self.run_application = True
+            self.application = lines["application"]
+            self.threads = lines["threads"]
+            if lines["show_region"] == "False":
+                self.show_region = False
+            else:
+                self.show_region = True
+            try:
+                self.service = lines["service"]
+            except:
+                self.service = "none"
+            if lines["use_watermark"] == "True":
+                self.watermark = True
+            else:
+                self.watermark = False
+            try:
+                self.watermark_file = lines["watermark_file"]
+            except:
+                ""
+            try:
+                if lines["use_webcam"] == "True":
+                    self.webcam = True
+                else:
+                    self.webcam = False
+            except:
+                self.webcam = False
+            try:
+                self.webcam_placement = lines["webcam_placement"]
+                self.webcam_resolution = lines["webcam_resolution"]
+            except:
+                self.webcam_placement = "0:0"
+                self.webcam_resolution = "320x200"
+
+    def save(self):
+        with open(
+            os.path.join(home, CONFIG_FILE),
             "w"
         ) as fob:
             # We will use dictionary based formatting expressions
@@ -668,9 +1005,10 @@ class Settings:
                 "video_container": self.video_container,
                 "video_codec": self.video_codec,
                 "audio_codec": self.audio_codec,
+                "run_application": str(self.run_application),
+                "application": self.application,
                 "show_region": str(self.show_region),
                 "use_watermark": str(self.watermark),
-                "advanced_settings": str(self.advanced),
                 "watermark_file": self.watermark_file,
                 "webcam": str(self.webcam),
                 "web_placement": self.webcam_placement,
@@ -679,51 +1017,34 @@ class Settings:
             }
 
             fob.write("""{
-        "inres": "%(inres)s",
-        "outres": "%(outres)s",
-        "x_offset": "%(x_offset)s",
-        "y_offset": "%(y_offset)s",
-        "fps": "%(fps)s",
-        "quality": "%(quality)s",
-        "bitrate": "%(bitrate)s",
-        "audio_bitrate" : "%(audio_bitrate)s",
-        "advanced_settings" : "%(advanced_settings)s",
-        "video_container" : "%(video_container)s",
-        "video_codec" : "%(video_codec)s",
-        "audio_codec" : "%(audio_codec)s",
-        "threads": "%(threads)s",
-        "show_region": "%(show_region)s",
-        "use_watermark" : "%(use_watermark)s",
-        "watermark_file" : "%(watermark_file)s",
-        "use_webcam" : "%(webcam)s",
-        "webcam_placement" : "%(web_placement)s",
-        "webcam_resolution" : "%(web_resolution)s",
-        "service": "%(service)s"\n}""" % d)
-
-    def on_button_custom_service_clicked(self, window):
-        custom = CustomService(self)
-
-    def on_button_reset_streamkey_clicked(self, window):
-        warning = StreamKey()
-
-    def on_button_configure_webcam_clicked(self, window):
-        self.webcamconfig = WebcamConfig(self)
+    "inres": "%(inres)s",
+    "outres": "%(outres)s",
+    "x_offset": "%(x_offset)s",
+    "y_offset": "%(y_offset)s",
+    "fps": "%(fps)s",
+    "quality": "%(quality)s",
+    "bitrate": "%(bitrate)s",
+    "audio_bitrate" : "%(audio_bitrate)s",
+    "video_container" : "%(video_container)s",
+    "video_codec" : "%(video_codec)s",
+    "audio_codec" : "%(audio_codec)s",
+    "threads": "%(threads)s",
+    "run_application": "%(run_application)s",
+    "application": "%(application)s",
+    "show_region": "%(show_region)s",
+    "use_watermark" : "%(use_watermark)s",
+    "watermark_file" : "%(watermark_file)s",
+    "use_webcam" : "%(webcam)s",
+    "webcam_placement" : "%(web_placement)s",
+    "webcam_resolution" : "%(web_resolution)s",
+    "service": "%(service)s"\n}""" % d)
 
     # Function to make the program backwards compatible
     # with the old config files
     def load_legacy_config(self):
         try:
             with open(
-                os.path.join(home, ".config/castawesome/.twitch_key"),
-                "r"
-            ) as fob:
-                key = fob.read()
-
-            if key == "":
-                warning = StreamKey()
-
-            with open(
-                os.path.join(home, ".config/castawesome/config.txt"),
+                os.path.join(home, CONFIG_FILE),
                 "r"
             ) as fob:
                 lines = fob.readlines()
@@ -738,205 +1059,34 @@ class Settings:
             self.threads = lines[7].strip()
             self.show_region = lines[8].strip()
         except IOError:
-            print ("Couldn't load config files!")
-
-
-# Custom Service Setup
-class CustomService():
-    def __init__(self, parent):
-        self.parent = parent
-        self.builder = Gtk.Builder()
-        try:
-            self.builder.add_from_file(CUSTOM_UI_FILE1)
-            print ("Loaded " + CUSTOM_UI_FILE1)
-        except:
-            self.builder.add_from_file(CUSTOM_UI_FILE2)
-            print ("Loaded " + CUSTOM_UI_FILE2)
-        self.window = self.builder.get_object("custom_service")
-        self.builder.connect_signals(self)
-        self.window.show_all()
-
-    def on_button_apply_custom_clicked(self, window):
-        self.parent.service = self.builder.get_object("entry_rtmp_url")\
-            .get_text()
-        self.parent.builder.get_object("combo_service_selector").set_active(5)
-        self.window.destroy()
+            print ("Couldn't load config file!")
 
 
 # Stream key warning dialog
 class StreamKey():
-    def __init__(self):
-        self.builder = Gtk.Builder()
-        try:
-            self.builder.add_from_file(STREAMKEY_UI_FILE1)
-            print ("Loaded " + STREAMKEY_UI_FILE1)
-        except:
-            self.builder.add_from_file(STREAMKEY_UI_FILE2)
-            print ("Loaded " + STREAMKEY_UI_FILE2)
-        self.window = self.builder.get_object("warning")
-        self.builder.connect_signals(self)
-        self.window.show_all()
+    key = None
 
-    def on_button_ok_clicked(self, window):
+    def __init__(self):
+        # If the file does not exist, create it and set secure permissions.
+        if not os.path.isfile(os.path.join(home, STREAM_KEY)):
+            self._create_config_file()
+
         with open(
-            os.path.join(home, ".config/castawesome/.twitch_key"),
+            os.path.join(home, STREAM_KEY),
+            "r"
+        ) as fob:
+            self.key = fob.read()
+
+    def save(self):
+        with open(
+            os.path.join(home, STREAM_KEY),
             "w"
         ) as fob:
-            fob.write(self.builder.get_object("entry_streamkey").get_text())
-        self.window.destroy()
+            fob.write(self.key)
 
-
-# Webcam config
-class WebcamConfig():
-    placement = "0:0"
-    res = ""
-
-    def __init__(self, parent):
-        self.parent = parent
-        self.builder = Gtk.Builder()
-        try:
-            self.builder.add_from_file(WEBCAM_UI_FILE1)
-        except:
-            self.builder.add_from_file(WEBCAM_UI_FILE2)
-        self.window = self.builder.get_object("webcam")
-        self.builder.connect_signals(self)
-        self.window.show_all()
-
-        self.builder.get_object("entry_resolution")\
-            .set_text(self.parent.webcam_resolution)
-
-        if self.parent.webcam_placement == "0:0":
-            self.builder.get_object("togglebutton_leftop").set_active(True)
-        elif self.parent.webcam_placement == "0:main_h/2-h/2":
-            self.builder.get_object("togglebutton_lefmid").set_active(True)
-        elif self.parent.webcam_placement == "0:main_h-h":
-            self.builder.get_object("togglebutton_lefbot").set_active(True)
-        elif self.parent.webcam_placement == "main_w/2-w/2:0":
-            self.builder.get_object("togglebutton_midtop").set_active(True)
-        elif self.parent.webcam_placement == "main_w/2-w/2:main_h/2-h/2":
-            self.builder.get_object("togglebutton_midmid").set_active(True)
-        elif self.parent.webcam_placement == "main_w/2-w/2:main_h-h":
-            self.builder.get_object("togglebutton_midbot").set_active(True)
-        elif self.parent.webcam_placement == "main_w-w:0":
-            self.builder.get_object("togglebutton_rigtop").set_active(True)
-        elif self.parent.webcam_placement == "main_w-w:main_h/2-h/2":
-            self.builder.get_object("togglebutton_rigmid").set_active(True)
-        elif self.parent.webcam_placement == "main_w-w:main_h-h":
-            self.builder.get_object("togglebutton_rigbot").set_active(True)
-
-    def on_button_webcam_apply_clicked(self, widget):
-        self.parent.webcam_placement = self.placement
-        self.parent.webcam_resolution = self.builder\
-            .get_object("entry_resolution").get_text()
-
-    # A bunch of toggleaction toggle event handlers
-    def on_toggleaction_leftop_toggled(self, sender):
-        if sender.get_active():
-            self.placement = "0:0"
-            self.builder.get_object("togglebutton_lefmid").set_active(False)
-            self.builder.get_object("togglebutton_lefbot").set_active(False)
-            self.builder.get_object("togglebutton_midtop").set_active(False)
-            self.builder.get_object("togglebutton_midmid").set_active(False)
-            self.builder.get_object("togglebutton_midbot").set_active(False)
-            self.builder.get_object("togglebutton_rigtop").set_active(False)
-            self.builder.get_object("togglebutton_rigmid").set_active(False)
-            self.builder.get_object("togglebutton_rigbot").set_active(False)
-
-    def on_toggleaction_lefmid_toggled(self, sender):
-        if sender.get_active():
-            self.placement = "0:main_h/2-h/2"
-            self.builder.get_object("togglebutton_leftop").set_active(False)
-            self.builder.get_object("togglebutton_lefbot").set_active(False)
-            self.builder.get_object("togglebutton_midtop").set_active(False)
-            self.builder.get_object("togglebutton_midmid").set_active(False)
-            self.builder.get_object("togglebutton_midbot").set_active(False)
-            self.builder.get_object("togglebutton_rigtop").set_active(False)
-            self.builder.get_object("togglebutton_rigmid").set_active(False)
-            self.builder.get_object("togglebutton_rigbot").set_active(False)
-
-    def on_toggleaction_lefbot_toggled(self, sender):
-        if sender.get_active():
-            self.placement = "0:main_h-h"
-            self.builder.get_object("togglebutton_leftop").set_active(False)
-            self.builder.get_object("togglebutton_lefmid").set_active(False)
-            self.builder.get_object("togglebutton_midtop").set_active(False)
-            self.builder.get_object("togglebutton_midmid").set_active(False)
-            self.builder.get_object("togglebutton_midbot").set_active(False)
-            self.builder.get_object("togglebutton_rigtop").set_active(False)
-            self.builder.get_object("togglebutton_rigmid").set_active(False)
-            self.builder.get_object("togglebutton_rigbot").set_active(False)
-
-    def on_toggleaction_midtop_toggled(self, sender):
-        if sender.get_active():
-            self.placement = "main_w/2-w/2:0"
-            self.builder.get_object("togglebutton_leftop").set_active(False)
-            self.builder.get_object("togglebutton_lefmid").set_active(False)
-            self.builder.get_object("togglebutton_lefbot").set_active(False)
-            self.builder.get_object("togglebutton_midmid").set_active(False)
-            self.builder.get_object("togglebutton_midbot").set_active(False)
-            self.builder.get_object("togglebutton_rigtop").set_active(False)
-            self.builder.get_object("togglebutton_rigmid").set_active(False)
-            self.builder.get_object("togglebutton_rigbot").set_active(False)
-
-    def on_toggleaction_midmid_toggled(self, sender):
-        if sender.get_active():
-            self.placement = "main_w/2-w/2:main_h/2-h/2"
-            self.builder.get_object("togglebutton_leftop").set_active(False)
-            self.builder.get_object("togglebutton_lefmid").set_active(False)
-            self.builder.get_object("togglebutton_leftop").set_active(False)
-            self.builder.get_object("togglebutton_midtop").set_active(False)
-            self.builder.get_object("togglebutton_midbot").set_active(False)
-            self.builder.get_object("togglebutton_rigtop").set_active(False)
-            self.builder.get_object("togglebutton_rigmid").set_active(False)
-            self.builder.get_object("togglebutton_rigbot").set_active(False)
-
-    def on_toggleaction_midbot_toggled(self, sender):
-        if sender.get_active():
-            self.placement = "main_w/2-w/2:main_h-h"
-            self.builder.get_object("togglebutton_leftop").set_active(False)
-            self.builder.get_object("togglebutton_lefmid").set_active(False)
-            self.builder.get_object("togglebutton_lefbot").set_active(False)
-            self.builder.get_object("togglebutton_midtop").set_active(False)
-            self.builder.get_object("togglebutton_midmid").set_active(False)
-            self.builder.get_object("togglebutton_rigtop").set_active(False)
-            self.builder.get_object("togglebutton_rigmid").set_active(False)
-            self.builder.get_object("togglebutton_rigbot").set_active(False)
-
-    def on_toggleaction_rigtop_toggled(self, sender):
-        if sender.get_active():
-            self.placement = "main_w-w:0"
-            self.builder.get_object("togglebutton_leftop").set_active(False)
-            self.builder.get_object("togglebutton_lefmid").set_active(False)
-            self.builder.get_object("togglebutton_lefbot").set_active(False)
-            self.builder.get_object("togglebutton_midtop").set_active(False)
-            self.builder.get_object("togglebutton_midmid").set_active(False)
-            self.builder.get_object("togglebutton_midbot").set_active(False)
-            self.builder.get_object("togglebutton_rigmid").set_active(False)
-            self.builder.get_object("togglebutton_rigbot").set_active(False)
-
-    def on_toggleaction_rigmid_toggled(self, sender):
-        if sender.get_active():
-            self.placement = "main_w-w:main_h/2-h/2"
-            self.builder.get_object("togglebutton_leftop").set_active(False)
-            self.builder.get_object("togglebutton_lefmid").set_active(False)
-            self.builder.get_object("togglebutton_lefbot").set_active(False)
-            self.builder.get_object("togglebutton_midtop").set_active(False)
-            self.builder.get_object("togglebutton_midmid").set_active(False)
-            self.builder.get_object("togglebutton_midbot").set_active(False)
-            self.builder.get_object("togglebutton_rigtop").set_active(False)
-            self.builder.get_object("togglebutton_rigbot").set_active(False)
-
-    def on_toggleaction_rigbot_toggled(self, sender):
-        if sender.get_active():
-            self.placement = "main_w-w:main_h-h"
-            self.builder.get_object("togglebutton_leftop").set_active(False)
-            self.builder.get_object("togglebutton_lefmid").set_active(False)
-            self.builder.get_object("togglebutton_lefbot").set_active(False)
-            self.builder.get_object("togglebutton_midtop").set_active(False)
-            self.builder.get_object("togglebutton_midmid").set_active(False)
-            self.builder.get_object("togglebutton_midbot").set_active(False)
-            self.builder.get_object("togglebutton_rigtop").set_active(False)
-            self.builder.get_object("togglebutton_rigmid").set_active(False)
+    def _create_config_file(self):
+        os.system("touch " + os.path.join(home, STREAM_KEY))
+        os.chmod(os.path.join(home, STREAM_KEY), 0o600)
 
 
 # About window
@@ -944,12 +1094,12 @@ class About():
     def __init__(self):
         self.builder = Gtk.Builder()
         try:
-            self.builder.add_from_file(ABOUT_UI_FILE1)
-            self.builder.get_object('image').set_from_file("CastA1.png")
+            self.builder.add_from_file(ABOUT_UI_FILE_LOCAL)
+            self.builder.get_object('image').set_from_file(IMAGE_LOGO)
         except:
-            self.builder.add_from_file(ABOUT_UI_FILE2)
+            self.builder.add_from_file(ABOUT_UI_FILE_SHARED)
             self.builder.get_object('image')\
-                .set_from_file("/usr/local/share/castawesome/ui/CastA1.png")
+                .set_from_file(SHARED_DIRECTORY + "ui/" + IMAGE_LOGO)
         self.window = self.builder.get_object("about")
         self.window.show_all()
 
@@ -959,7 +1109,7 @@ def main():
     if len(sys.argv) > 1 and sys.argv[1] == "test":
         print ("Castawesome is ok")
         sys.exit(0)
-    app = GUI()
+    GUI()
     Gtk.main()
 
     return 0
