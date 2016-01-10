@@ -104,7 +104,7 @@
   </object>
   <object class="GtkWindow" id="window_castawesome">
     <property name="can_focus">False</property>
-    <property name="title" translatable="yes">CastAwesome</property>
+    <property name="title" translatable="yes">Castawesome</property>
     <property name="icon">IconCA.png</property>
     <signal name="destroy" handler="destroy" swapped="no"/>
     <child>

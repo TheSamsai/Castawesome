@@ -317,7 +317,7 @@ class GUI:
         self.builder.get_object("spinbutton_input_resolution_y")\
             .set_text(str(screen.get_height()))
         self.settings.inres = str(screen.get_width()) + 'x'\
-            + str(screen.get_width())
+            + str(screen.get_height())
 
     def on_toggle_output_resolution_link_toggled(self, togglebutton):
         if togglebutton.get_active():
