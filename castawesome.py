@@ -207,6 +207,21 @@ class GUI:
             self.builder.get_object("combobox_" + key).pack_start(cell, True)
             self.builder.get_object("combobox_" + key)\
                 .add_attribute(cell, 'text', 0)
+        idx = 0
+        for audio in advanced_options['audio_devices']:
+            self.builder.get_object("liststore_audio_device").append([
+                audio['alsa_name'],
+                audio['card_name'],
+                audio['IO'],
+                audio['description']
+            ])
+            if audio['alsa_name'] == self.settings.audio_device:
+                self.builder.get_object("treeview_audio_device").set_cursor(idx)
+            idx += 1
+        cell = Gtk.CellRendererText()
+        self.builder.get_object("treeview_audio_device").append_column(Gtk.TreeViewColumn("Device", cell, text=1))
+        self.builder.get_object("treeview_audio_device").append_column(Gtk.TreeViewColumn("I/O", cell, text=2))
+        self.builder.get_object("treeview_audio_device").append_column(Gtk.TreeViewColumn("Name", cell, text=3))
         self.builder.get_object("entry_audio_bitrate")\
             .set_text(self.settings.audio_bitrate)
         self.builder.get_object("spinbutton_threads")\
@@ -454,6 +469,9 @@ class GUI:
         active = combobox.get_active()
         if active >= 0:
             self.settings.audio_codec = model[active][0]
+
+    def on_audio_device_changed(self, treeview):
+        self.settings.audio_device = treeview.get_model().get(treeview.get_selection().get_selected()[1], 0)[0]
 
     def on_threads_value_changed(self, spinbutton):
         self.settings.threads = spinbutton.get_text()
@@ -745,7 +763,8 @@ class GUI:
             "audio_bitrate": self.settings.audio_bitrate,
             "video_container": self.settings.video_container,
             "video_codec": self.settings.video_codec,
-            "audio_codec": self.settings.audio_codec
+            "audio_codec": self.settings.audio_codec,
+            "audio_device": self.settings.audio_device
         }
         parameters["keyint"] = str(int(parameters["fps"]) * 2)
         # Decide which avconv/avconv command to use based on the settings
@@ -772,7 +791,7 @@ class GUI:
             command = command + '-i %(watermark_file)s '
         command = str(
             command
-            + '-f pulse -ac 1 -i default -vcodec %(video_codec)s '
+            + '-f pulse -ac 1 -i %(audio_device)s -vcodec %(video_codec)s '
             + filter_complex
             + '-s %(outres)s -preset %(quality)s -acodec %(audio_codec)s '
             + '-ar 44100 -threads %(threads)s -qscale 3 '
@@ -824,7 +843,12 @@ class GUI:
 
 
 def get_advanced_options():
-    options = {"video_container": [], "video_codec": [], "audio_codec": []}
+    options = {
+        "video_container": [],
+        "video_codec": [],
+        "audio_codec": [],
+        "audio_devices": []
+    }
 
     # make avconv list containers (which it calls formats)
     for line in subprocess.check_output(["avconv", "-formats"]).splitlines():
@@ -884,32 +908,70 @@ def get_advanced_options():
         key=operator.itemgetter("name")
     )
 
+    # Find all sound devices
+    audio = []
+    for result in subprocess.check_output(["pactl", "list", "sources"])\
+            .split(b'\n\n'):
+        source = None
+        card_name = None
+        device_description = None
+        alsa_name = None
+        for line in result.splitlines():
+            line = line.replace(b'\t', b'').decode('utf-8')
+            match = re.match('alsa\.card_name\s=\s"(.*)"', line, re.X)
+            if match:
+                card_name = match.group(1)
+            else:
+                match = re.match('device\.description\s=\s"(.*)"', line, re.X)
+                if match:
+                    device_description = match.group(1)
+                else:
+                    match = re.match('^Name:\s(.*)', line, re.X)
+                    if match:
+                        alsa_name = match.group(1)
+                    else:
+                        match = re.match('^Source\s\#(.*)$', line, re.X)
+                        if match:
+                            source = match.group(1)
+
+        if source:
+            match = re.match('alsa_([(input)(output)]*)', alsa_name, re.X)
+            IO = match.group(1)
+            audio.append({
+                'alsa_name': alsa_name,
+                'card_name': card_name,
+                'IO': IO.title(),
+                'description': device_description
+            })
+    options['audio_devices'] = audio
+
     return options
 
 
 # Settings manager for user's settings
 class Settings:
-    inres = "1280x720"                # Input resolution
-    outres = "1280x720"                # Output resolution
-    x_offset = "0"                    # X offset
-    y_offset = "0"                    # Y offset
-    fps = "30"                        # Frames per Second
-    quality = "medium"                # Quality (medium, fast, etc.)
-    bitrate = "500k"                # Bitrate (+300k usually is fine)
-    audio_bitrate = "128k"            # <TODO>
-    threads = "1"                    # Amount of threads
-    show_region = "0"                # Show or don't show capture region
-    video_container = "flv"            # <TODO>
-    video_codec = "h264"            # <TODO>
-    audio_codec = "mp3"                # <TODO>
-    run_application = False
-    application = ""
-    watermark = False                # Enable/Disable watermarking
-    watermark_file = ""                # Filename of the watermark
-    webcam = False                    # Enable/Disable webcam
-    webcam_placement = "0:0"        # Placement of the webcam overlay
-    webcam_resolution = "320x200"    # Resolution of the webcam
-    service = "rtmp://live.twitch.tv/app/"    # The streaming service in use
+    inres = "1280x720"                     # Input resolution
+    outres = "1280x720"                    # Output resolution
+    x_offset = "0"                         # X offset
+    y_offset = "0"                         # Y offset
+    fps = "30"                             # Frames per Second
+    quality = "medium"                     # Quality (medium, fast, etc.)
+    bitrate = "500k"                       # Bitrate (+300k usually is fine)
+    audio_bitrate = "128k"                 # Bitrate of the audio stream
+    threads = "1"                          # Amount of threads
+    show_region = "0"                      # Show or don't show capture region
+    video_container = "flv"                # Video container to use
+    video_codec = "h264"                   # Video codec to use
+    audio_codec = "mp3"                    # Audio codec to use
+    audio_device = ""                      # The audio device to stream sound from
+    run_application = False                # Toggle if application should be run when casting starts
+    application = ""                       # Application/game to run when casting starts
+    watermark = False                      # Enable/Disable watermarking
+    watermark_file = ""                    # Filename of the watermark
+    webcam = False                         # Enable/Disable webcam
+    webcam_placement = "0:0"               # Placement of the webcam overlay
+    webcam_resolution = "320x200"          # Resolution of the webcam
+    service = "rtmp://live.twitch.tv/app/" # The streaming service in use
 
     def __init__(self, builder):
         try:
@@ -939,52 +1001,40 @@ class Settings:
         else:
             lines = json.loads(lines)
 
-            self.inres = lines["inres"]
-            self.outres = lines["outres"]
-            self.x_offset = lines["x_offset"]
-            self.y_offset = lines["y_offset"]
-            self.fps = lines["fps"]
-            self.quality = lines["quality"]
-            self.bitrate = lines["bitrate"]
-            self.audio_bitrate = lines["audio_bitrate"]
-            self.video_container = lines["video_container"]
-            self.video_codec = lines["video_codec"]
-            self.audio_codec = lines["audio_codec"]
-            if lines["run_application"] == "False":
+            self.inres = lines.get("inres", self.inres)
+            self.outres = lines.get("outres", self.outres)
+            self.x_offset = lines.get("x_offset", self.x_offset)
+            self.y_offset = lines.get("y_offset", self.y_offset)
+            self.fps = lines.get("fps", self.fps)
+            self.quality = lines.get("quality", self.quality)
+            self.bitrate = lines.get("bitrate", self.bitrate)
+            self.audio_bitrate = lines.get("audio_bitrate", self.audio_bitrate)
+            self.video_container = lines.get("video_container", self.video_container)
+            self.video_codec = lines.get("video_codec", self.video_codec)
+            self.audio_codec = lines.get("audio_codec", self.audio_codec)
+            self.audio_device = lines.get("audio_device", "")
+            if lines.get("run_application", str(self.run_application)) == "False":
                 self.run_application = False
             else:
                 self.run_application = True
-            self.application = lines["application"]
-            self.threads = lines["threads"]
-            if lines["show_region"] == "False":
+            self.application = lines.get("application", self.application)
+            self.threads = lines.get("threads", self.threads)
+            if lines.get("show_region", str(self.show_region)) == "False":
                 self.show_region = False
             else:
                 self.show_region = True
-            try:
-                self.service = lines["service"]
-            except:
-                self.service = "none"
-            if lines["use_watermark"] == "True":
+            self.service = lines.get("service", self.service)
+            if lines.get("use_watermark", str(self.watermark)) == "True":
                 self.watermark = True
             else:
                 self.watermark = False
-            try:
-                self.watermark_file = lines["watermark_file"]
-            except:
-                ""
-            try:
-                if lines["use_webcam"] == "True":
-                    self.webcam = True
-                else:
-                    self.webcam = False
-            except:
+            self.watermark_file = lines.get("watermark_file", self.watermark_file)
+            if lines.get("use_webcam", str(self.webcam)) == "True":
+                self.webcam = True
+            else:
                 self.webcam = False
-            try:
-                self.webcam_placement = lines["webcam_placement"]
-                self.webcam_resolution = lines["webcam_resolution"]
-            except:
-                self.webcam_placement = "0:0"
-                self.webcam_resolution = "320x200"
+            self.webcam_placement = lines.get("webcam_placement", self.webcam_placement)
+            self.webcam_resolution = lines.get("webcam_resolution", self.webcam_resolution)
 
     def save(self):
         with open(
@@ -1005,6 +1055,7 @@ class Settings:
                 "video_container": self.video_container,
                 "video_codec": self.video_codec,
                 "audio_codec": self.audio_codec,
+                "audio_device": self.audio_device,
                 "run_application": str(self.run_application),
                 "application": self.application,
                 "show_region": str(self.show_region),
@@ -1028,6 +1079,7 @@ class Settings:
     "video_container" : "%(video_container)s",
     "video_codec" : "%(video_codec)s",
     "audio_codec" : "%(audio_codec)s",
+    "audio_device" : "%(audio_device)s",
     "threads": "%(threads)s",
     "run_application": "%(run_application)s",
     "application": "%(application)s",
