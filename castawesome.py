@@ -782,7 +782,7 @@ class GUI:
                 "'overlay=%(web_placement)s,format=yuv420p[out]' -map '[out]' "
         command = \
             'avconv -f x11grab -show_region %(show_region)s -s %(inres)s '\
-            + '-framerate " %(fps)s" -i :0.0+%(x_offset)s,%(y_offset)s '
+            + '-framerate " %(fps)s" -i %(display)+%(x_offset)s,%(y_offset)s '
         if self.settings.webcam:
             command = command + \
                 '-f video4linux2 -video_size %(web_resolution)s '\
@@ -972,6 +972,7 @@ class Settings:
     webcam_placement = "0:0"               # Placement of the webcam overlay
     webcam_resolution = "320x200"          # Resolution of the webcam
     service = "rtmp://live.twitch.tv/app/" # The streaming service in use
+    display = os.environ.get('DISPLAY', ':0.0') # The X display
 
     def __init__(self, builder):
         try:
