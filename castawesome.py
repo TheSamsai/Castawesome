@@ -748,6 +748,7 @@ class GUI:
             "outres": self.settings.outres,
             "x_offset": self.settings.x_offset,
             "y_offset": self.settings.y_offset,
+            "display" : self.settings.display,
             "fps": self.settings.fps,
             "quality": self.settings.quality,
             "bitrate": self.settings.bitrate,
@@ -782,7 +783,7 @@ class GUI:
                 "'overlay=%(web_placement)s,format=yuv420p[out]' -map '[out]' "
         command = \
             'avconv -f x11grab -show_region %(show_region)s -s %(inres)s '\
-            + '-framerate " %(fps)s" -i %(display)+%(x_offset)s,%(y_offset)s '
+            + '-framerate " %(fps)s" -i %(display)s+%(x_offset)s,%(y_offset)s '
         if self.settings.webcam:
             command = command + \
                 '-f video4linux2 -video_size %(web_resolution)s '\
